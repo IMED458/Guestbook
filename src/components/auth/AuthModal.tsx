@@ -3,19 +3,23 @@ import { X, Lock, Mail, User as UserIcon, ArrowRight, Sparkles, Loader2 } from '
 import { api } from '../../lib/api.ts';
 import { User } from '../../types.ts';
 import { useI18n, LanguageSwitcher } from '../../lib/i18n.tsx';
+import { useModalA11y } from '../../lib/useModalA11y.ts';
+import type { LegalSlug } from '../../content/legal.ts';
 
 interface AuthModalProps {
   isOpen: boolean;
   initialMode?: 'login' | 'register';
   onClose: () => void;
   onSuccess: (user: User) => void;
+  onNavigateLegal: (slug: LegalSlug) => void;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   initialMode = 'login',
   onClose,
-  onSuccess
+  onSuccess,
+  onNavigateLegal
 }) => {
   const { t, lang } = useI18n();
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
@@ -24,6 +28,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+
+  const { ref: dialogRef } = useModalA11y(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -37,6 +44,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         if (!name.trim()) throw new Error(lang === 'ka' ? 'გთხოვთ შეიყვანოთ თქვენი სახელი' : 'Please enter your full name');
         if (!email.trim()) throw new Error(lang === 'ka' ? 'გთხოვთ შეიყვანოთ ელ.ფოსტა' : 'Please enter your email');
         if (password.length < 6) throw new Error(lang === 'ka' ? 'პაროლი უნდა შედგებოდეს მინიმუმ 6 სიმბოლოსგან' : 'Password must be at least 6 characters');
+        if (!termsAccepted) {
+          throw new Error(
+            lang === 'ka'
+              ? 'რეგისტრაციისთვის საჭიროა წესებისა და კონფიდენციალურობის პოლიტიკის მიღება.'
+              : 'Please accept the Terms and the Privacy Policy to create an account.'
+          );
+        }
 
         const res = await api.auth.register(email.trim(), password, name.trim());
         onSuccess(res.user);
@@ -71,6 +85,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-fadeIn">
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-modal-title"
         id="auth-modal-card"
         className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden relative"
       >
@@ -78,15 +96,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <button
           id="auth-close-btn"
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-full transition-colors cursor-pointer"
+          aria-label={lang === 'ka' ? 'ფანჯრის დახურვა' : 'Close this dialog'}
+          className="absolute top-4 right-4 p-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-full transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
         >
-          <X className="w-5 h-5" />
+          <X className="w-5 h-5" aria-hidden="true" />
         </button>
 
         <div className="p-6 sm:p-8">
           {/* Header */}
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-serif font-bold text-stone-900">
+            <h2 id="auth-modal-title" className="text-2xl font-serif font-bold text-stone-900">
               {mode === 'login' ? t('auth', 'welcomeBack') : t('auth', 'createAccount')}
             </h2>
             <p className="text-sm text-stone-600 mt-1.5">
@@ -105,7 +124,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               disabled={loading}
               className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-amber-50 hover:bg-amber-100/90 text-amber-900 border border-amber-200 text-sm font-semibold transition-all cursor-pointer shadow-xs disabled:opacity-50"
             >
-              <Sparkles className="w-4 h-4 text-amber-600" />
+              <Sparkles className="w-4 h-4 text-amber-700" aria-hidden="true" />
               <span>{t('auth', 'demoLogin')}</span>
             </button>
           </div>
@@ -119,7 +138,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
 
           {error && (
-            <div className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
+            <div
+              role="alert"
+              className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-300 text-rose-800 text-xs font-medium flex items-center gap-2"
+            >
               <span>{error}</span>
             </div>
           )}
@@ -127,13 +149,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
               <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1.5">
+                <label htmlFor="auth-name-input" className="block text-xs font-semibold text-stone-800 mb-1.5">
                   {t('auth', 'fullName')}
                 </label>
                 <div className="relative">
-                  <UserIcon className="w-4 h-4 text-stone-400 absolute left-3 top-3" />
+                  <UserIcon className="w-4 h-4 text-stone-500 absolute left-3 top-3" aria-hidden="true" />
                   <input
                     id="auth-name-input"
+                    autoComplete="name"
                     type="text"
                     required
                     value={name}
@@ -146,13 +169,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1.5">
+              <label htmlFor="auth-email-input" className="block text-xs font-semibold text-stone-800 mb-1.5">
                 {t('auth', 'email')}
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-stone-400 absolute left-3 top-3" />
+                <Mail className="w-4 h-4 text-stone-500 absolute left-3 top-3" aria-hidden="true" />
                 <input
                   id="auth-email-input"
+                  autoComplete="email"
                   type="email"
                   required
                   value={email}
@@ -164,13 +188,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1.5">
+              <label htmlFor="auth-password-input" className="block text-xs font-semibold text-stone-800 mb-1.5">
                 {t('auth', 'password')}
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-stone-400 absolute left-3 top-3" />
+                <Lock className="w-4 h-4 text-stone-500 absolute left-3 top-3" aria-hidden="true" />
                 <input
                   id="auth-password-input"
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                   type="password"
                   required
                   value={password}
@@ -181,6 +206,43 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             </div>
 
+            {mode === 'register' && (
+              <div className="pt-1">
+                <label
+                  htmlFor="auth-terms-checkbox"
+                  className="flex items-start gap-2.5 text-xs text-stone-800 leading-relaxed cursor-pointer"
+                >
+                  <input
+                    id="auth-terms-checkbox"
+                    type="checkbox"
+                    required
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 shrink-0 rounded border-stone-400 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 cursor-pointer"
+                  />
+                  <span>
+                    {lang === 'ka' ? 'ვეთანხმები ' : 'I agree to the '}
+                    <button
+                      type="button"
+                      onClick={() => onNavigateLegal('terms')}
+                      className="font-semibold underline underline-offset-2 hover:text-stone-950 cursor-pointer"
+                    >
+                      {lang === 'ka' ? 'წესებსა და პირობებს' : 'Terms and Conditions'}
+                    </button>
+                    {lang === 'ka' ? ' და ' : ' and the '}
+                    <button
+                      type="button"
+                      onClick={() => onNavigateLegal('privacy')}
+                      className="font-semibold underline underline-offset-2 hover:text-stone-950 cursor-pointer"
+                    >
+                      {lang === 'ka' ? 'კონფიდენციალურობის პოლიტიკას' : 'Privacy Policy'}
+                    </button>
+                    {lang === 'ka' ? '.' : '.'}
+                  </span>
+                </label>
+              </div>
+            )}
+
             <button
               id="auth-submit-btn"
               type="submit"
@@ -189,20 +251,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                   <span>{t('auth', 'loading')}</span>
                 </>
               ) : (
                 <>
                   <span>{mode === 'login' ? t('auth', 'signIn') : t('auth', 'createAccount')}</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4" aria-hidden="true" />
                 </>
               )}
             </button>
           </form>
 
           {/* Toggle mode */}
-          <div className="mt-6 text-center text-xs text-stone-500">
+          <div className="mt-6 text-center text-xs text-stone-600">
             {mode === 'login' ? (
               <>
                 {t('auth', 'noAccount')}{' '}

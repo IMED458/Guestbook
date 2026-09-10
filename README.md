@@ -93,3 +93,32 @@ messageEmails/{messageId}                guest emails — write-only for guests,
 ```
 
 Media lives in Cloudinary; Firestore stores only the resulting URLs.
+
+---
+
+## Compliance and accessibility
+
+| Area | Where it lives |
+| --- | --- |
+| Operator identity used by every legal page and the footer | [`src/lib/site-config.ts`](src/lib/site-config.ts) — **placeholders, fill these in** |
+| Privacy, Terms, Refund, and Cookie policies (Georgian + English) | [`src/content/legal.ts`](src/content/legal.ts), rendered by `LegalPage` at `#/legal/<slug>` |
+| Cookie / storage consent, and what each category covers | [`src/lib/consent.ts`](src/lib/consent.ts), banner in `CookieBanner` |
+| Image licensing | [`IMAGE-CREDITS.md`](IMAGE-CREDITS.md) |
+| Keyboard and screen-reader behaviour for dialogs | [`src/lib/useModalA11y.ts`](src/lib/useModalA11y.ts) |
+
+### Tracking
+
+There is no analytics product on this site — no Google Analytics, no ad network,
+no social pixel. The only measurement is a per-day page-view counter written to
+the guest book's own Firestore document, and it does not run until the visitor
+opts in through the banner. Typefaces are self-hosted (`src/fonts/`), so opening
+a page discloses the visitor's IP address to no third party.
+
+### Before going live
+
+1. Fill in every `[PLACEHOLDER]` in `src/lib/site-config.ts`. Until you do, each
+   legal page shows a visible warning that it is still a template.
+2. Have a lawyer in your jurisdiction read the four policies. They are drafted
+   against Georgian and EU consumer/data-protection practice, but they are a
+   starting point, not legal advice.
+3. Update the Refund Policy when paid plans actually launch.

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./fonts/google-fonts.css";
 
 @font-face {
   font-family: 'BPG DedaEna';
@@ -46,4 +47,48 @@
   font-weight: 400;
   font-style: normal;
   font-display: swap;
+}
+
+
+/* ---------------------------------------------------------------
+   Accessibility baseline
+   --------------------------------------------------------------- */
+
+/* Every interactive element gets a visible focus ring for keyboard users,
+   without showing one on mouse clicks. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid #1c1917;
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
+/* Skip link: off-screen until it takes focus, then pinned to the top-left. */
+.skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: -100px;
+  z-index: 100;
+  padding: 0.625rem 1rem;
+  border-radius: 0.75rem;
+  background: #1c1917;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: top 150ms ease;
+}
+
+.skip-link:focus {
+  top: 0.75rem;
+}
+
+/* Respect a visitor's request for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

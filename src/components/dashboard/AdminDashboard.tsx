@@ -370,7 +370,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <span className="font-bold text-sm text-stone-900 block leading-tight">
                 {lang === 'ka' ? 'მართვის პანელი' : 'Admin Console'}
               </span>
-              <span className="text-[10px] text-stone-400 uppercase tracking-wider block">
+              <span className="text-[10px] text-stone-600 uppercase tracking-wider block">
                 {lang === 'ka' ? 'ციფრული წიგნი' : 'Memoria Platform'}
               </span>
             </div>
@@ -379,7 +379,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         {/* Active Guest Book Switcher */}
         <div className="p-4 border-b border-stone-100 bg-stone-50/50">
-          <label className="block text-[11px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">
+          <label className="block text-[11px] font-bold text-stone-600 uppercase tracking-wider mb-1.5">
             {t('dashboard', 'activeBook')}
           </label>
           {guestBooks.length > 0 ? (
@@ -395,7 +395,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </option>
                 ))}
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-stone-400 absolute right-2.5 top-2.5 pointer-events-none" />
+              <ChevronDown className="w-3.5 h-3.5 text-stone-600 absolute right-2.5 top-2.5 pointer-events-none" />
             </div>
           ) : (
             <div className="text-xs text-stone-500 italic">
@@ -527,12 +527,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div className="p-5 rounded-2xl bg-white border border-stone-200/80 shadow-xs">
                   <div className="flex items-center justify-between text-xs text-stone-500 mb-2">
                     <span className="font-semibold uppercase tracking-wider">{t('dashboard', 'kpiMessages')}</span>
-                    <MessageSquare className="w-4 h-4 text-stone-400" />
+                    <MessageSquare className="w-4 h-4 text-stone-600" />
                   </div>
                   <div className="text-2xl sm:text-3xl font-bold text-stone-900">
                     {stats?.totalMessages ?? 0}
                   </div>
-                  <div className="mt-1 text-[11px] text-stone-400">
+                  <div className="mt-1 text-[11px] text-stone-600">
                     {lang === 'ka' ? `${stats?.messagesToday ?? 0} დაემატა დღეს` : `${stats?.messagesToday ?? 0} posted today`}
                   </div>
                 </div>
@@ -547,7 +547,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <div className="text-2xl sm:text-3xl font-bold text-stone-900">
                     {(stats?.totalPhotos ?? 0) + (stats?.totalVideos ?? 0)}
                   </div>
-                  <div className="mt-1 text-[11px] text-stone-400">
+                  <div className="mt-1 text-[11px] text-stone-600">
                     {lang === 'ka'
                       ? `${stats?.totalPhotos ?? 0} ფოტო • ${stats?.totalVideos ?? 0} ვიდეო`
                       : `${stats?.totalPhotos ?? 0} photos • ${stats?.totalVideos ?? 0} videos`}
@@ -562,7 +562,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <div className="text-2xl sm:text-3xl font-bold text-stone-900">
                     {stats?.totalReactions ?? 0}
                   </div>
-                  <div className="mt-1 text-[11px] text-stone-400">
+                  <div className="mt-1 text-[11px] text-stone-600">
                     {lang === 'ka' ? 'სტუმრების ემოციები' : 'Love stamps from visitors'}
                   </div>
                 </div>
@@ -575,7 +575,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <div className="text-2xl sm:text-3xl font-bold text-stone-900">
                     {stats?.guestBookViews ?? 0}
                   </div>
-                  <div className="mt-1 text-[11px] text-stone-400">
+                  <div className="mt-1 text-[11px] text-stone-600">
                     {lang === 'ka' ? 'ვიზიტორთა სკანირებები და ნახვები' : 'Unique visitor scans & visits'}
                   </div>
                 </div>
@@ -635,7 +635,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             className="w-full max-w-[28px] bg-stone-900 rounded-t-md transition-all group-hover:bg-stone-700"
                             style={{ height: `${heightPct}%` }}
                           />
-                          <span className="text-[10px] text-stone-400 truncate max-w-[36px]">
+                          <span className="text-[10px] text-stone-600 truncate max-w-[36px]">
                             {day.label.slice(0, 3)}
                           </span>
                         </div>
@@ -666,7 +666,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             className="w-full max-w-[28px] bg-rose-500 rounded-t-md transition-all group-hover:bg-rose-600"
                             style={{ height: `${heightPct}%` }}
                           />
-                          <span className="text-[10px] text-stone-400 truncate max-w-[36px]">
+                          <span className="text-[10px] text-stone-600 truncate max-w-[36px]">
                             {day.label.slice(0, 3)}
                           </span>
                         </div>
@@ -848,7 +848,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div className="flex flex-col sm:flex-row gap-3">
                   {/* Search */}
                   <div className="relative flex-1">
-                    <Search className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" />
+                    <Search className="w-4 h-4 text-stone-600 absolute left-3 top-2.5" />
                     <input
                       type="text"
                       value={searchQuery}
@@ -951,7 +951,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           </div>
 
                           {msg.email && (
-                            <div className="text-[11px] text-stone-400 mb-1">
+                            <div className="text-[11px] text-stone-600 mb-1">
                               {lang === 'ka' ? 'პირადი ელფოსტა:' : 'Private Email:'} {msg.email}
                             </div>
                           )}
@@ -970,7 +970,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             </div>
                           )}
 
-                          <div className="text-[11px] text-stone-400 flex items-center gap-3">
+                          <div className="text-[11px] text-stone-600 flex items-center gap-3">
                             <span>{new Date(msg.createdAt).toLocaleString(lang === 'ka' ? 'ka-GE' : 'en-US')}</span>
                             {msg.reactions && Object.keys(msg.reactions).length > 0 && (
                               <div className="flex items-center gap-1.5">
@@ -1321,7 +1321,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         className="w-56 h-56 mx-auto rounded-xl shadow-xs"
                       />
                     ) : (
-                      <div className="w-56 h-56 flex items-center justify-center text-xs text-stone-400">
+                      <div className="w-56 h-56 flex items-center justify-center text-xs text-stone-600">
                         {lang === 'ka' ? 'QR კოდი იქმნება...' : 'Generating QR Code...'}
                       </div>
                     )}
@@ -1380,7 +1380,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       />
                     )}
 
-                    <div className="mt-4 text-[10px] text-stone-400 font-mono">
+                    <div className="mt-4 text-[10px] text-stone-600 font-mono">
                       {lang === 'ka' ? 'მიუშვით მობილურის კამერა გასახსნელად' : 'Point your smartphone camera to open'}
                     </div>
                   </div>

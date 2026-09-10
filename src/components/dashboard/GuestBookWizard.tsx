@@ -17,6 +17,7 @@ import {
   X
 } from 'lucide-react';
 import { api } from '../../lib/api.ts';
+import { useModalA11y } from '../../lib/useModalA11y.ts';
 import { EventType, ThemePreset, GuestBook, FontStyle } from '../../types.ts';
 import { THEME_PRESETS, FONT_OPTIONS, getFontFamily } from '../../lib/theme.ts';
 import { useI18n } from '../../lib/i18n.tsx';
@@ -118,6 +119,8 @@ export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
   const [isPrivate, setIsPrivate] = useState(false);
   const [password, setPassword] = useState('');
 
+  const { ref: dialogRef } = useModalA11y(isOpen, onClose);
+
   if (!isOpen) return null;
 
   const handleSelectEventType = (type: EventType) => {
@@ -193,6 +196,10 @@ export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/70 backdrop-blur-sm animate-fadeIn overflow-y-auto">
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="wizard-title"
         id="guestbook-wizard-container"
         className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden relative my-6"
       >
@@ -202,15 +209,16 @@ export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
             <span className="text-xs font-bold uppercase tracking-widest text-stone-600 block mb-1">
               {lang === 'ka' ? `ნაბიჯი ${step} / 8-დან` : `Step ${step} of 8`}
             </span>
-            <h2 className="text-xl sm:text-2xl font-serif font-bold text-stone-900">
+            <h2 id="wizard-title" className="text-xl sm:text-2xl font-serif font-bold text-stone-900">
               {lang === 'ka' ? 'სტუმრების წიგნის შექმნა' : 'Create Your Guest Book'}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-full transition-colors cursor-pointer"
+            aria-label={lang === 'ka' ? 'ფანჯრის დახურვა' : 'Close this dialog'}
+            className="p-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-full transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -374,7 +382,11 @@ export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
                       coverImage === img ? 'border-stone-900 scale-102 shadow-md' : 'border-transparent opacity-80 hover:opacity-100'
                     }`}
                   >
-                    <img src={img} alt="preset cover" className="w-full h-full object-cover" />
+                    <img
+                      src={img}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
                   </button>
                 ))}
               </div>

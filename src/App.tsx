@@ -5,12 +5,21 @@ import { GuestBookPublicView } from './components/guest-book/GuestBookPublicView
 import { AdminDashboard } from './components/dashboard/AdminDashboard.tsx';
 import { GuestBookWizard } from './components/dashboard/GuestBookWizard.tsx';
 import { AuthModal } from './components/auth/AuthModal.tsx';
+import { LegalPage } from './components/legal/LegalPage.tsx';
+import { SiteFooter } from './components/layout/SiteFooter.tsx';
+import { CookieBanner } from './components/common/CookieBanner.tsx';
 import { api } from './lib/api.ts';
+import { useI18n } from './lib/i18n.tsx';
+import { legalDocs, type LegalSlug } from './content/legal.ts';
 import { User, GuestBook } from './types.ts';
 
-type AppView = 'landing' | 'public' | 'dashboard';
+type AppView = 'landing' | 'public' | 'dashboard' | 'legal';
+
+const isLegalSlug = (value: string): value is LegalSlug =>
+  Object.prototype.hasOwnProperty.call(legalDocs, value);
 
 export default function App() {
+  const { lang } = useI18n();
   const [currentView, setCurrentView] = useState<AppView>('landing');
   const [activeSlug, setActiveSlug] = useState<string>('wedding-nika-ana');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -19,6 +28,8 @@ export default function App() {
   const [pendingWizard, setPendingWizard] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [initialBookIdForDashboard, setInitialBookIdForDashboard] = useState<string | undefined>(undefined);
+  const [legalSlug, setLegalSlug] = useState<LegalSlug>('privacy');
+  const [cookieSettingsOpen, setCookieSettingsOpen] = useState(false);
 
   // Hash routing keeps every deep link a single static document, which is what
   // GitHub Pages serves — no rewrite rules, no 404 on refresh or direct link.
@@ -34,12 +45,28 @@ export default function App() {
       }
     }
 
+    if (hash.startsWith('legal/')) {
+      const slug = hash.slice(6).split(/[/?]/)[0];
+      if (isLegalSlug(slug)) {
+        setLegalSlug(slug);
+        setCurrentView('legal');
+        return;
+      }
+    }
+
     if (hash === 'dashboard' || hash.startsWith('dashboard/')) {
       setCurrentView('dashboard');
       return;
     }
 
     setCurrentView('landing');
+  };
+
+  const navigateToLegal = (slug: LegalSlug) => {
+    setLegalSlug(slug);
+    setCurrentView('legal');
+    window.location.hash = `#/legal/${slug}`;
+    window.scrollTo({ top: 0 });
   };
 
   const navigateTo = (view: AppView, slug?: string) => {
@@ -117,6 +144,10 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-stone-50 text-stone-900 font-sans selection:bg-rose-100 selection:text-rose-900">
+      <a href="#main-content" className="skip-link">
+        {lang === 'ka' ? 'გადასვლა მთავარ შიგთავსზე' : 'Skip to main content'}
+      </a>
+
       {/* Top Navbar: Show on Landing and Dashboard */}
       {currentView !== 'public' && (
         <Navbar
@@ -133,7 +164,7 @@ export default function App() {
       )}
 
       {/* Main View Router */}
-      <div className="flex-1 flex flex-col">
+      <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col">
         {currentView === 'landing' && (
           <LandingPage
             onOpenCreate={handleOpenCreate}
@@ -150,6 +181,14 @@ export default function App() {
           />
         )}
 
+        {currentView === 'legal' && (
+          <LegalPage
+            slug={legalSlug}
+            onBackToHome={() => navigateTo('landing')}
+            onNavigateLegal={navigateToLegal}
+          />
+        )}
+
         {currentView === 'dashboard' && (
           <AdminDashboard
             initialGuestBookId={initialBookIdForDashboard}
@@ -158,12 +197,31 @@ export default function App() {
             onLogout={handleLogout}
           />
         )}
-      </div>
+      </main>
+
+      {/* The dashboard is a full-height app shell of its own; everywhere else
+          gets the shared footer with the legal links and operator details. */}
+      {currentView !== 'dashboard' && (
+        <SiteFooter
+          onNavigateLegal={navigateToLegal}
+          onOpenCookieSettings={() => setCookieSettingsOpen(true)}
+        />
+      )}
+
+      <CookieBanner
+        forceOpen={cookieSettingsOpen}
+        onDismissForced={() => setCookieSettingsOpen(false)}
+        onNavigateLegal={navigateToLegal}
+      />
 
       {/* Modals */}
       <AuthModal
         isOpen={isAuthModalOpen}
         initialMode={authMode}
+        onNavigateLegal={(slug) => {
+          setIsAuthModalOpen(false);
+          navigateToLegal(slug);
+        }}
         onClose={() => {
           setIsAuthModalOpen(false);
           setPendingWizard(false);

@@ -169,7 +169,7 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
           <h2 className="text-2xl font-serif font-bold">
             {lang === 'ka' ? 'დაცული სტუმრების წიგნი' : 'Private Guest Book'}
           </h2>
-          <p className="text-xs text-stone-400 mt-2 mb-6">
+          <p className="text-xs text-stone-600 mt-2 mb-6">
             {lang === 'ka'
               ? 'ეს წიგნი დახურულია. გთხოვთ შეიყვანოთ მოწვევაში მითითებული პაროლი გასაგრძელებლად.'
               : 'This celebration is private. Please enter the password provided on your invitation to continue.'}
@@ -324,7 +324,11 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
           <div className="h-64 sm:h-96 w-full relative">
             <img
               src={guestBook.coverImage}
-              alt={guestBook.title}
+              alt={
+                lang === 'ka'
+                  ? `${guestBook.title} — ღონისძიების მთავარი ფოტო`
+                  : `${guestBook.title} — event cover photo`
+              }
               className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-700"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
@@ -536,7 +540,11 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
                     >
                       <img
                         src={photo.url}
-                        alt="Guest uploaded attachment"
+                        alt={
+                          lang === 'ka'
+                            ? `${msg.name}-ის მიერ ატვირთული ფოტო`
+                            : `Photo uploaded by ${msg.name}`
+                        }
                         className="w-full h-auto max-h-80 object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -577,8 +585,15 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
                         return (
                           <button
                             key={emoji}
+                            type="button"
                             onClick={() => handleToggleReaction(msg.id, emoji)}
-                            className={`px-2.5 py-1 rounded-lg text-xs flex items-center gap-1 transition-all cursor-pointer ${
+                            aria-pressed={Boolean(userHasReacted)}
+                            aria-label={
+                              lang === 'ka'
+                                ? `რეაქცია ${emoji} ${msg.name}-ის ჩანაწერზე, ${count} რეაქცია`
+                                : `React with ${emoji} to the entry by ${msg.name}, ${count} so far`
+                            }
+                            className={`px-2.5 py-1 rounded-lg text-xs flex items-center gap-1 transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current ${
                               userHasReacted
                                 ? 'bg-rose-100 border border-rose-300 text-rose-800 scale-105 font-bold shadow-xs'
                                 : count > 0
@@ -587,11 +602,11 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
                                   : 'bg-stone-100 border border-stone-200 text-stone-700'
                                 : isDark
                                 ? 'text-stone-500 hover:text-stone-300 hover:bg-stone-800'
-                                : 'text-stone-400 hover:text-stone-700 hover:bg-stone-100'
+                                : 'text-stone-600 hover:text-stone-700 hover:bg-stone-100'
                             }`}
                           >
-                            <span>{emoji}</span>
-                            {count > 0 && <span>{count}</span>}
+                            <span aria-hidden="true">{emoji}</span>
+                            {count > 0 && <span aria-hidden="true">{count}</span>}
                           </button>
                         );
                       })}

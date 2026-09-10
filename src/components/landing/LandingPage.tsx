@@ -31,6 +31,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onOpenAuth
 }) => {
   const { t, lang } = useI18n();
+  const ka = lang === 'ka';
   const [openFaq, setOpenFaq] = React.useState<number | null>(null);
 
   const toggleFaq = (index: number) => {
@@ -161,25 +162,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </button>
           </div>
 
-          {/* Quick Metrics */}
-          <div className="mt-12 max-w-3xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-            <div className="p-4 rounded-xl bg-white/80 border border-stone-200/80 shadow-2xs">
-              <span className="block text-2xl sm:text-3xl font-bold text-stone-900 font-serif">12,000+</span>
-              <span className="text-xs text-stone-600 font-medium">{t('landing', 'statsMessages')}</span>
-            </div>
-            <div className="p-4 rounded-xl bg-white/80 border border-stone-200/80 shadow-2xs">
-              <span className="block text-2xl sm:text-3xl font-bold text-rose-600 font-serif">850+</span>
-              <span className="text-xs text-stone-600 font-medium">{t('landing', 'statsEvents')}</span>
-            </div>
-            <div className="p-4 rounded-xl bg-white/80 border border-stone-200/80 shadow-2xs">
-              <span className="block text-2xl sm:text-3xl font-bold text-amber-700 font-serif">25,000+</span>
-              <span className="text-xs text-stone-600 font-medium">{t('landing', 'statsPhotos')}</span>
-            </div>
-            <div className="p-4 rounded-xl bg-white/80 border border-stone-200/80 shadow-2xs">
-              <span className="block text-2xl sm:text-3xl font-bold text-emerald-700 font-serif">100%</span>
-              <span className="text-xs text-stone-600 font-medium">{t('landing', 'statsInstant')}</span>
-            </div>
-          </div>
+          {/* Verifiable product facts — no usage numbers we cannot evidence. */}
+          <ul className="mt-12 max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+            {[
+              {
+                title: ka ? 'QR კოდი ან ბმული' : 'QR code or link',
+                desc: ka
+                  ? 'სტუმარს აპლიკაციის ჩამოტვირთვა არ სჭირდება — ბრაუზერშივე წერს.'
+                  : 'Guests need no app — they write straight from the browser.'
+              },
+              {
+                title: ka ? 'ფოტო და ვიდეო' : 'Photos and video',
+                desc: ka
+                  ? 'ერთ ჩანაწერზე 10 მბ-მდე ფოტო და 100 მბ-მდე ვიდეო.'
+                  : 'Up to 10 MB per photo and 100 MB per video on an entry.'
+              },
+              {
+                title: ka ? 'მოდერაცია და ექსპორტი' : 'Moderation and export',
+                desc: ka
+                  ? 'დაამტკიცეთ ჩანაწერები გამოქვეყნებამდე და ჩამოტვირთეთ ყველაფერი CSV-ად.'
+                  : 'Approve entries before they appear, and download everything as CSV.'
+              }
+            ].map((item) => (
+              <li
+                key={item.title}
+                className="p-4 rounded-xl bg-white border border-stone-200 shadow-2xs"
+              >
+                <span className="block text-sm font-semibold text-stone-900">{item.title}</span>
+                <span className="mt-1 block text-xs text-stone-700 leading-relaxed">{item.desc}</span>
+              </li>
+            ))}
+          </ul>
 
           {/* Luxury Interactive Memory Book Showcase */}
           <div className="mt-14 max-w-5xl mx-auto relative">
@@ -265,65 +278,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-20 bg-white border-b border-stone-200/80">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
-          <span className="text-xs font-bold uppercase tracking-widest text-stone-500">
-            {lang === 'ka' ? 'მასპინძლების შეფასებები' : 'TRUSTED BY HOSTS WORLDWIDE'}
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-serif font-bold text-stone-900 mt-2 mb-12">
-            {lang === 'ka' ? 'რას ამბობენ ჩვენი მომხმარებლები' : 'Cherished by Happy Couples & Organizers'}
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-            <div className="p-6 rounded-2xl bg-stone-50 border border-stone-200/80 shadow-xs">
-              <div className="flex items-center gap-1 text-amber-500 mb-3">
-                {'★★★★★'}
-              </div>
-              <p className="text-sm text-stone-700 italic leading-relaxed">
-                {lang === 'ka'
-                  ? '„ჩვენს სტუმრებს ძალიან მოეწონათ მაგიდებზე QR კოდის დასკანერება! შევაგროვეთ 140-ზე მეტი თბილი მილოცვა და ცოცხალი ფოტო, რომელიც ფოტოგრაფსაც კი არ ჰქონდა გადაღებული.“'
-                  : '“Our guests loved scanning the table cards! We collected over 140 heartfelt photos and funny videos that our official photographer didn’t catch.”'}
-              </p>
-              <div className="mt-4 pt-4 border-t border-stone-200/60">
-                <span className="block text-xs font-semibold text-stone-900">ანა და ნიკა გ.</span>
-                <span className="block text-[11px] text-stone-500">{lang === 'ka' ? 'ქორწილი თბილისში' : 'Wedding in Tbilisi'}</span>
-              </div>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-stone-50 border border-stone-200/80 shadow-xs">
-              <div className="flex items-center gap-1 text-amber-500 mb-3">
-                {'★★★★★'}
-              </div>
-              <p className="text-sm text-stone-700 italic leading-relaxed">
-                {lang === 'ka'
-                  ? '„Memoria-ს ვიყენებთ ჩვენს ბუტიკ-სასტუმროში კახეთში. დამსვენებლები ტოვებენ ულამაზეს შთაბეჭდილებებსა და ფოტოებს QR კოდის საშუალებით პირდაპირ კოტეჯებიდან.“'
-                  : '“We use Memoria for our boutique vineyard hotel. Visitors leave lovely reviews and photos directly through the QR code in each cottage.”'}
-              </p>
-              <div className="mt-4 pt-4 border-t border-stone-200/60">
-                <span className="block text-xs font-semibold text-stone-900">{lang === 'ka' ? 'შატო კახური' : 'Villa Kakhuri'}</span>
-                <span className="block text-[11px] text-stone-500">{lang === 'ka' ? 'სასტუმრო და მარანი' : 'Boutique Hotel & Estate'}</span>
-              </div>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-stone-50 border border-stone-200/80 shadow-xs">
-              <div className="flex items-center gap-1 text-amber-500 mb-3">
-                {'★★★★★'}
-              </div>
-              <p className="text-sm text-stone-700 italic leading-relaxed">
-                {lang === 'ka'
-                  ? '„მოდერაციის ფუნქცია შეუცვლელი აღმოჩნდა ჩვენი კომპანიის საიუბილეო საღამოზე. მილოცვები წინასწარ მოწმდებოდა და ეკრანებზე პირდაპირ ეთერში გადიოდა!“'
-                  : '“The moderation feature was a lifesaver for our company anniversary gala. It allowed our communications team to curate messages live on the ballroom screens!”'}
-              </p>
-              <div className="mt-4 pt-4 border-t border-stone-200/60">
-                <span className="block text-xs font-semibold text-stone-900">ლევან თ.</span>
-                <span className="block text-[11px] text-stone-500">{lang === 'ka' ? 'ივენთ მენეჯერი' : 'Corporate Events Manager'}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* FAQ Section */}
       <section className="py-20 bg-stone-50 border-b border-stone-200/80">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
@@ -394,18 +348,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-10 bg-stone-950 text-stone-400 text-xs border-t border-stone-800">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="font-serif font-bold text-white text-sm tracking-tight">Memoria</span>
-            <span>— {t('landing', 'footerTagline')}</span>
-          </div>
-          <div className="text-stone-500">
-            © {new Date().getFullYear()} Memoria. {t('landing', 'footerRights')}
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };

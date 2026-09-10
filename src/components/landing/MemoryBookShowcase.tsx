@@ -202,7 +202,16 @@ export const MemoryBookShowcase: React.FC<MemoryBookShowcaseProps> = ({
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto">
+    <section
+      className="w-full max-w-6xl mx-auto"
+      aria-label={lang === 'ka' ? 'ინტერაქტიული მაგალითი' : 'Interactive example'}
+    >
+      <p className="mb-3 text-xs font-semibold text-stone-700 text-center">
+        {lang === 'ka'
+          ? 'ინტერაქტიული მაგალითი — ქვემოთ მოცემული ჩანაწერები სადემონსტრაციოა და არა რეალური მომხმარებლების შეფასებები.'
+          : 'Interactive example — the entries below are sample content, not real customer reviews.'}
+      </p>
+
       {/* Top Floating Control Bar: Interactive Font & Theme Picker */}
       <div className="mb-6 p-3 sm:p-4 rounded-3xl bg-white/95 backdrop-blur-md border border-stone-200 shadow-xl flex flex-wrap items-center justify-between gap-4">
         {/* Left: Font Switcher */}
@@ -219,10 +228,11 @@ export const MemoryBookShowcase: React.FC<MemoryBookShowcaseProps> = ({
                   key={f.id}
                   type="button"
                   onClick={() => setActiveFont(f.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  aria-pressed={isSelected}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 ${
                     isSelected
                       ? 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-600/30'
-                      : 'bg-stone-100 hover:bg-stone-200 text-stone-700'
+                      : 'bg-stone-100 hover:bg-stone-200 text-stone-800'
                   }`}
                 >
                   {lang === 'ka' ? f.labelKa : f.labelEn}
@@ -245,13 +255,15 @@ export const MemoryBookShowcase: React.FC<MemoryBookShowcaseProps> = ({
                   key={pal.id}
                   type="button"
                   onClick={() => setActivePalette(pal.id as any)}
+                  aria-pressed={isSelected}
+                  aria-label={`${lang === 'ka' ? 'თემა' : 'Theme'}: ${lang === 'ka' ? pal.nameKa : pal.nameEn}`}
                   title={lang === 'ka' ? pal.nameKa : pal.nameEn}
-                  className={`w-7 h-7 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
+                  className={`w-7 h-7 rounded-xl transition-all cursor-pointer flex items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 ${
                     isSelected ? 'ring-2 ring-stone-900 scale-105' : 'hover:opacity-80'
                   }`}
                   style={{ backgroundColor: pal.primaryColor }}
                 >
-                  {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                  {isSelected && <Check className="w-3.5 h-3.5 text-white" aria-hidden="true" />}
                 </button>
               );
             })}
@@ -296,7 +308,7 @@ export const MemoryBookShowcase: React.FC<MemoryBookShowcaseProps> = ({
                     {lang === 'ka' ? 'საქორწილო სტუმრების წიგნი' : 'WEDDING GUEST BOOK'}
                   </span>
                   <span className="text-xs text-stone-600 font-sans flex items-center gap-1.5 bg-stone-100/90 px-3 py-1 rounded-full border border-stone-200">
-                    <Calendar className="w-3.5 h-3.5 text-stone-400" />
+                    <Calendar className="w-3.5 h-3.5 text-stone-600" />
                     15 სექტემბერი, 2026
                   </span>
                 </div>
@@ -367,7 +379,11 @@ export const MemoryBookShowcase: React.FC<MemoryBookShowcaseProps> = ({
                         <div className="mb-4 rounded-xl overflow-hidden p-1.5 bg-stone-50 border border-stone-200 shadow-inner group-hover:scale-[1.01] transition-transform">
                           <img
                             src={note.photoUrl}
-                            alt="Guest Memory"
+                            alt={
+                              lang === 'ka'
+                                ? `სადემონსტრაციო ფოტო ჩანაწერთან — ${note.author}`
+                                : `Sample photo attached to the entry by ${note.author}`
+                            }
                             referrerPolicy="no-referrer"
                             className="w-full h-44 object-cover rounded-lg"
                           />
@@ -391,12 +407,17 @@ export const MemoryBookShowcase: React.FC<MemoryBookShowcaseProps> = ({
                             <button
                               type="button"
                               onClick={() => setIsPlayingAudio(!isPlayingAudio)}
+                              aria-label={
+                                isPlayingAudio
+                                  ? (lang === 'ka' ? 'ხმოვანი შეტყობინების პაუზა' : 'Pause the voice message')
+                                  : (lang === 'ka' ? 'ხმოვანი შეტყობინების დაკვრა' : 'Play the voice message')
+                              }
                               className="w-9 h-9 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center transition-transform hover:scale-105 cursor-pointer shadow-sm"
                             >
                               {isPlayingAudio ? (
-                                <Pause className="w-4 h-4 fill-white" />
+                                <Pause className="w-4 h-4 fill-white" aria-hidden="true" />
                               ) : (
-                                <Play className="w-4 h-4 fill-white ml-0.5" />
+                                <Play className="w-4 h-4 fill-white ml-0.5" aria-hidden="true" />
                               )}
                             </button>
                             <div className="flex-1">
@@ -457,7 +478,7 @@ export const MemoryBookShowcase: React.FC<MemoryBookShowcaseProps> = ({
                       >
                         <Heart
                           className={`w-3.5 h-3.5 ${
-                            note.hasLiked ? 'fill-rose-600 text-rose-600' : 'text-stone-400'
+                            note.hasLiked ? 'fill-rose-600 text-rose-600' : 'text-stone-600'
                           }`}
                         />
                         <span>{note.likes}</span>
@@ -472,14 +493,14 @@ export const MemoryBookShowcase: React.FC<MemoryBookShowcaseProps> = ({
             <div className="mt-8 p-5 sm:p-6 rounded-2xl bg-white border border-stone-200 shadow-sm font-sans">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                 <div>
-                  <h4 className="text-sm font-bold text-stone-900 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-amber-500" />
+                  <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-600" aria-hidden="true" />
                     <span>
                       {lang === 'ka'
                         ? 'გამოსცადეთ თავად: დაწერეთ სატესტო მილოცვა'
                         : 'Try it yourself: Leave a quick test message'}
                     </span>
-                  </h4>
+                  </h3>
                   <p className="text-xs text-stone-500 mt-0.5">
                     {lang === 'ka'
                       ? 'აკრიფეთ ტექსტი და ნახეთ, როგორ გამოჩნდება ქართული ხელნაწერის შრიფტით წიგნში.'
@@ -529,6 +550,6 @@ export const MemoryBookShowcase: React.FC<MemoryBookShowcaseProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 };

@@ -24,6 +24,7 @@ import QRCode from 'qrcode';
 
 import { auth, COL, db } from './firebase.ts';
 import { uploadToCloudinary, type UploadedMedia } from './cloudinary.ts';
+import { allows } from './consent.ts';
 import { DashboardStats, GuestBook, GuestMessage, Media, User } from '../types.ts';
 
 const VISITOR_ID_KEY = 'gb_visitor_id';
@@ -180,6 +181,10 @@ function attachVisitorReactions(
 
 /** One view per visitor per 30 minutes, counted into a per-day map. */
 async function recordView(guestBookId: string): Promise<void> {
+  // Page-view counting is the one analytics purpose on this site, so it does
+  // not run at all until the visitor has opted in.
+  if (!allows('analytics')) return;
+
   const key = `${VIEW_MARK_PREFIX}${guestBookId}`;
   const last = Number(localStorage.getItem(key) || 0);
   if (Date.now() - last < 30 * 60 * 1000) return;

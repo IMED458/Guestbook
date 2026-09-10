@@ -150,11 +150,11 @@ export const FONT_OPTIONS: FontOption[] = [
   },
   {
     id: 'sans',
-    nameKa: 'თანამედროვე სადა (FiraGO / Sans)',
-    nameEn: 'Modern Clean (FiraGO / Sans)',
+    nameKa: 'თანამედროვე სადა (Noto Sans)',
+    nameEn: 'Modern Clean (Noto Sans)',
     categoryKa: 'სადა',
     categoryEn: 'Sans',
-    fontFamily: "'FiraGO', 'Noto Sans Georgian', 'Plus Jakarta Sans', -apple-system, sans-serif",
+    fontFamily: "'Noto Sans Georgian', 'Plus Jakarta Sans', -apple-system, sans-serif",
     sampleKa: 'სუფთა, მკაფიო და უზადოდ იკითხვადი ტექსტი.',
     sampleEn: 'Clean, crisp and universally legible typography.',
     badgeKa: 'მოდერნი',
@@ -242,7 +242,7 @@ export const FONT_OPTIONS: FontOption[] = [
     nameEn: 'Nateli Modern Display',
     categoryKa: 'დისპლეი',
     categoryEn: 'Display',
-    fontFamily: "'BPG Nateli', 'FiraGO', 'Noto Sans Georgian', sans-serif",
+    fontFamily: "'BPG Nateli', 'Noto Sans Georgian', sans-serif",
     sampleKa: 'გამორჩეული, თბილი ქართული დიზაინი.',
     sampleEn: 'Distinctive warm Georgian display.',
     badgeKa: 'გამორჩეული',
@@ -270,7 +270,7 @@ export const FONT_OPTIONS: FontOption[] = [
     nameEn: 'Space Grotesk Minimal',
     categoryKa: 'გროტესკი',
     categoryEn: 'Grotesk',
-    fontFamily: "'Space Grotesk', 'FiraGO', 'Noto Sans Georgian', monospace, sans-serif",
+    fontFamily: "'Space Grotesk', 'Noto Sans Georgian', monospace, sans-serif",
     sampleKa: 'ინოვაციური, გეომეტრიული და ტექნოლოგიური.',
     sampleEn: 'Geometric, techno and architectonic.',
     badgeKa: 'გროტესკი',
@@ -304,7 +304,7 @@ export function getFontFamily(fontStyle: FontStyle): string {
     case 'playfair':
       return "'Playfair Display', 'Noto Serif Georgian', Georgia, serif";
     case 'sans':
-      return "'FiraGO', 'Noto Sans Georgian', 'Plus Jakarta Sans', -apple-system, sans-serif";
+      return "'Noto Sans Georgian', 'Plus Jakarta Sans', -apple-system, sans-serif";
     case 'classic_script':
       return "'BPG Classic', 'Noto Serif Georgian', Georgia, serif";
     case 'nostalgia':
@@ -313,12 +313,12 @@ export function getFontFamily(fontStyle: FontStyle): string {
     case 'handwriting':
       return "'Noto Serif Georgian', 'Lora', Georgia, serif";
     case 'nateli':
-      return "'BPG Nateli', 'FiraGO', 'Noto Sans Georgian', sans-serif";
+      return "'BPG Nateli', 'Noto Sans Georgian', sans-serif";
     case 'glaho':
       return "'BPG Glaho', 'Noto Serif Georgian', Georgia, serif";
     case 'mono':
-      return "'Space Grotesk', 'FiraGO', 'Noto Sans Georgian', monospace, sans-serif";
+      return "'Space Grotesk', 'Noto Sans Georgian', monospace, sans-serif";
     default:
-      return "'Noto Serif Georgian', 'FiraGO', -apple-system, BlinkMacSystemFont, sans-serif";
+      return "'Noto Serif Georgian', -apple-system, BlinkMacSystemFont, sans-serif";
   }
 }

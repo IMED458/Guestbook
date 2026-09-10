@@ -38,7 +38,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           className="flex items-center gap-2.5 group text-left cursor-pointer focus:outline-none shrink-0"
         >
           <div className="w-10 h-10 rounded-xl bg-stone-900 text-amber-100 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
-            <BookOpen className="w-5 h-5 text-amber-300" />
+            <BookOpen className="w-5 h-5 text-amber-300" aria-hidden="true" />
           </div>
           <div>
             <span className="font-serif font-bold text-lg tracking-tight text-stone-900 block leading-tight">
@@ -66,7 +66,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={onOpenDemoBook}
             className="text-sm font-medium text-stone-600 hover:text-rose-600 transition-colors flex items-center gap-1.5 cursor-pointer"
           >
-            <Sparkles className="w-4 h-4 text-rose-500" />
+            <Sparkles className="w-4 h-4 text-rose-500" aria-hidden="true" />
             <span>{t('nav', 'demoGuestbook')}</span>
           </button>
           {currentUser && (
@@ -77,7 +77,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 currentView === 'admin-dashboard' ? 'text-stone-900 font-semibold' : 'text-stone-600'
               }`}
             >
-              <LayoutDashboard className="w-4 h-4" />
+              <LayoutDashboard className="w-4 h-4" aria-hidden="true" />
               <span>{t('nav', 'adminDashboard')}</span>
             </button>
           )}
@@ -95,7 +95,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={onOpenWizard}
                 className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-stone-900 rounded-lg hover:bg-stone-800 transition-colors shadow-sm cursor-pointer"
               >
-                <PlusCircle className="w-3.5 h-3.5" />
+                <PlusCircle className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>{t('nav', 'newGuestbook')}</span>
               </button>
               <button
@@ -103,16 +103,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={onOpenDashboard}
                 className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200/70 rounded-lg transition-colors cursor-pointer"
               >
-                <UserIcon className="w-3.5 h-3.5 text-stone-500" />
+                <UserIcon className="w-3.5 h-3.5 text-stone-500" aria-hidden="true" />
                 <span className="max-w-[120px] truncate">{currentUser.name}</span>
               </button>
               <button
                 id="nav-logout-btn"
                 onClick={onLogout}
                 title={t('nav', 'logout')}
-                className="p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors cursor-pointer"
+                aria-label={t('nav', 'logout')}
+                className="p-2 text-stone-600 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors cursor-pointer"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
           ) : (

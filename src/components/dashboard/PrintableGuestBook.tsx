@@ -60,7 +60,7 @@ export const PrintableGuestBook: React.FC<PrintableGuestBookProps> = ({
             {guestBook.title}
           </h1>
           <div className="flex items-center justify-center gap-2 text-sm text-stone-600 mt-3 font-serif">
-            <Calendar className="w-4 h-4 text-stone-400" />
+            <Calendar className="w-4 h-4 text-stone-600" />
             <span>
               {new Date(guestBook.eventDate).toLocaleDateString(locale, {
                 month: 'long',
@@ -138,7 +138,7 @@ export const PrintableGuestBook: React.FC<PrintableGuestBookProps> = ({
         </div>
 
         {/* Booklet Footer */}
-        <div className="mt-12 pt-6 border-t border-stone-200 text-center text-xs text-stone-400 font-serif">
+        <div className="mt-12 pt-6 border-t border-stone-200 text-center text-xs text-stone-600 font-serif">
           {lang === 'ka' ? 'დაბეჭდილია Memoria ციფრული სტუმრების წიგნიდან' : 'Printed from Memoria Digital Guest Book • Created with love'}
         </div>
       </div>

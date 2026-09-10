@@ -654,6 +654,12 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {}
   };
 
+  // Screen readers pick pronunciation from <html lang>, so it has to follow
+  // the switcher rather than stay stuck on the value in index.html.
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+
   const t = (section: I18nSection, key: string): string => {
     const secKey = (section === 'guestbook' ? 'guestBook' : section) as keyof typeof translations['en'];
     const currentDict = translations[lang] || translations.ka;
@@ -781,11 +787,13 @@ export const LanguageSwitcher: React.FC<{ className?: string }> = ({ className =
         className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
           lang === 'ka'
             ? 'bg-white text-stone-900 shadow-xs font-bold'
-            : 'text-stone-500 hover:text-stone-900'
+            : 'text-stone-700 hover:text-stone-900'
         }`}
+        aria-pressed={lang === 'ka'}
+        lang="ka"
         title="ქართული ენა"
       >
-        <span>🇬🇪</span>
+        <span aria-hidden="true">🇬🇪</span>
         <span>ქართ</span>
       </button>
       <button
@@ -795,11 +803,13 @@ export const LanguageSwitcher: React.FC<{ className?: string }> = ({ className =
         className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
           lang === 'en'
             ? 'bg-white text-stone-900 shadow-xs font-bold'
-            : 'text-stone-500 hover:text-stone-900'
+            : 'text-stone-700 hover:text-stone-900'
         }`}
+        aria-pressed={lang === 'en'}
+        lang="en"
         title="English"
       >
-        <span>🇬🇧</span>
+        <span aria-hidden="true">🇬🇧</span>
         <span>EN</span>
       </button>
     </div>
