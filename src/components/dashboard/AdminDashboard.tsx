@@ -31,6 +31,8 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { api } from '../../lib/api.ts';
+import { publicGuestBookUrl } from '../../lib/urls.ts';
+import { downloadBlob } from '../../lib/download.ts';
 import { GuestBook, GuestMessage, DashboardStats, Media, AdminTab, ThemePreset, ThemeSettings, FontStyle } from '../../types.ts';
 import { THEME_PRESETS, getFontFamily, FONT_OPTIONS } from '../../lib/theme.ts';
 import { PrintableGuestBook } from './PrintableGuestBook.tsx';
@@ -145,7 +147,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       const targetBook = guestBooks.find((b) => b.id === bookId);
       if (targetBook) {
-        const publicUrl = `${window.location.origin}/g/${targetBook.slug}`;
+        const publicUrl = publicGuestBookUrl(targetBook.slug);
         api.qrcode.getPng(publicUrl).then(setQrPngUrl).catch(() => {});
       }
     } catch (err) {
@@ -293,7 +295,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const copyPublicLink = () => {
     if (!currentBook) return;
-    const url = `${window.location.origin}/g/${currentBook.slug}`;
+    const url = publicGuestBookUrl(currentBook.slug);
     navigator.clipboard.writeText(url);
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 2000);
@@ -301,7 +303,38 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const downloadCsv = () => {
     if (!currentBook) return;
-    window.open(`/api/admin/guestbooks/${currentBook.id}/export.csv`, '_blank');
+
+    const quote = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const headers = [
+      'Message ID', 'Guest Name', 'Private Email', 'Relationship',
+      'Status', 'Date', 'Message', 'Media URLs', 'Reactions Count'
+    ];
+
+    const rows = messages.map((m) => [
+      m.id,
+      m.name,
+      m.email || '',
+      m.relationship || '',
+      m.status,
+      m.createdAt,
+      m.message,
+      (m.media || []).map((med) => med.url).join('; '),
+      Object.values(m.reactions || {}).reduce((a, b) => a + b, 0)
+    ].map(quote).join(','));
+
+    // A BOM keeps Georgian text readable when the file is opened in Excel.
+    const csv = '\uFEFF' + [headers.map(quote).join(','), ...rows].join('\n');
+    downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `guestbook-${currentBook.slug}-${Date.now()}.csv`);
+  };
+
+  const downloadQrSvg = async () => {
+    if (!currentBook) return;
+    try {
+      const svg = await api.qrcode.getSvg(publicGuestBookUrl(currentBook.slug));
+      downloadBlob(new Blob([svg], { type: 'image/svg+xml' }), `${currentBook.slug}-qrcode.svg`);
+    } catch {
+      setActionNotice(lang === 'ka' ? 'QR კოდის შექმნა ვერ მოხერხდა.' : 'Could not generate the QR code.');
+    }
   };
 
   if (isPrintMode && currentBook) {
@@ -314,7 +347,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     );
   }
 
-  const publicUrl = currentBook ? `${window.location.origin}/g/${currentBook.slug}` : '';
+  const publicUrl = currentBook ? publicGuestBookUrl(currentBook.slug) : '';
 
   return (
     <div className="min-h-screen bg-stone-100/70 text-stone-900 flex flex-col md:flex-row">
@@ -1311,14 +1344,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <span>{lang === 'ka' ? 'ჩამოტვირთეთ PNG' : 'Download PNG'}</span>
                     </a>
 
-                    <a
-                      href={api.qrcode.getSvgUrl(publicUrl)}
-                      download={`${currentBook?.slug}-qrcode.svg`}
+                    <button
+                      type="button"
+                      onClick={downloadQrSvg}
                       className="w-full sm:w-auto px-4 py-2.5 bg-white border border-stone-300 hover:bg-stone-50 text-stone-800 text-xs font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer"
                     >
                       <Download className="w-3.5 h-3.5" />
                       <span>{lang === 'ka' ? 'ჩამოტვირთეთ ვექტორული SVG' : 'Download Vector SVG'}</span>
-                    </a>
+                    </button>
                   </div>
                 </div>
 

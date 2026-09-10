@@ -14,6 +14,7 @@ import {
   PenTool
 } from 'lucide-react';
 import { api } from '../../lib/api.ts';
+import { publicGuestBookUrl } from '../../lib/urls.ts';
 import { GuestBook, GuestMessage, FontStyle } from '../../types.ts';
 import { LeaveMessageModal } from './LeaveMessageModal.tsx';
 import { ShareModal } from './ShareModal.tsx';
@@ -250,7 +251,7 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
     }
   };
 
-  const currentUrl = `${window.location.origin}/g/${guestBook.slug}`;
+  const currentUrl = publicGuestBookUrl(guestBook.slug);
 
   return (
     <div

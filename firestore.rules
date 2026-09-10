@@ -1,0 +1,89 @@
+rules_version = '2';
+
+// Digital Guest Book — Firestore security rules.
+//
+// Model:
+//   guestbooks/{bookId}                       public to read, owner to write
+//   guestbooks/{bookId}/reactors/{visitorId}  a visitor's own emoji reactions
+//   messages/{messageId}                      approved ones public, owner sees all
+//   messageEmails/{messageId}                 private guest emails, owner-only
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(ownerId) {
+      return signedIn() && request.auth.uid == ownerId;
+    }
+
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    function isString(value, maxLen) {
+      return value is string && value.size() > 0 && value.size() <= maxLen;
+    }
+
+    match /guestbooks/{bookId} {
+      // Anyone with the link can open a guest book. Private books are gated by
+      // a password hash the client compares — never by hiding the document.
+      allow read: if true;
+
+      allow create: if isOwner(request.resource.data.ownerId)
+                    && isString(request.resource.data.title, 200)
+                    && isString(request.resource.data.slug, 120);
+
+      // Owners may edit anything except who owns the book.
+      allow update: if isOwner(resource.data.ownerId)
+                    && request.resource.data.ownerId == resource.data.ownerId;
+
+      // Visitors may only bump the view counters, nothing else.
+      allow update: if changedKeys().hasOnly(['viewsByDay', 'viewsTotal']);
+
+      allow delete: if isOwner(resource.data.ownerId);
+
+      // A visitor's own reaction ledger, keyed by their local visitor id.
+      match /reactors/{visitorId} {
+        allow read, write: if true;
+      }
+    }
+
+    match /messages/{messageId} {
+      allow read: if resource.data.status == 'APPROVED'
+                  || isOwner(resource.data.ownerId);
+
+      // Guests sign the book without an account. The status must match the
+      // book's moderation setting, so nobody can publish past moderation.
+      allow create: if isString(request.resource.data.name, 120)
+                    && isString(request.resource.data.message, 5000)
+                    && request.resource.data.guestBookId is string
+                    && request.resource.data.status in ['APPROVED', 'PENDING']
+                    && exists(/databases/$(database)/documents/guestbooks/$(request.resource.data.guestBookId))
+                    && request.resource.data.ownerId ==
+                       get(/databases/$(database)/documents/guestbooks/$(request.resource.data.guestBookId)).data.ownerId
+                    && request.resource.data.status ==
+                       (get(/databases/$(database)/documents/guestbooks/$(request.resource.data.guestBookId)).data.isModerated
+                          ? 'PENDING' : 'APPROVED')
+                    && request.resource.data.media.size() <= 5;
+
+      // Hosts moderate; visitors may only toggle reaction counts.
+      allow update: if isOwner(resource.data.ownerId)
+                    && request.resource.data.ownerId == resource.data.ownerId;
+      allow update: if changedKeys().hasOnly(['reactions']);
+
+      allow delete: if isOwner(resource.data.ownerId);
+    }
+
+    match /messageEmails/{messageId} {
+      // Write-only for guests, readable only by the host of that guest book.
+      allow read, delete: if isOwner(resource.data.ownerId);
+      allow create: if request.resource.data.email is string
+                    && request.resource.data.email.size() <= 200
+                    && request.resource.data.ownerId ==
+                       get(/databases/$(database)/documents/guestbooks/$(request.resource.data.guestBookId)).data.ownerId;
+      allow update: if false;
+    }
+  }
+}

@@ -15,23 +15,30 @@ export default function App() {
   const [activeSlug, setActiveSlug] = useState<string>('wedding-nika-ana');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [pendingWizard, setPendingWizard] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [initialBookIdForDashboard, setInitialBookIdForDashboard] = useState<string | undefined>(undefined);
 
-  // Sync with browser URL
+  // Hash routing keeps every deep link a single static document, which is what
+  // GitHub Pages serves — no rewrite rules, no 404 on refresh or direct link.
   const updateRouteFromUrl = () => {
-    const path = window.location.pathname;
-    if (path.startsWith('/g/')) {
-      const slug = path.replace('/g/', '').split('/')[0];
+    const hash = window.location.hash.replace(/^#\/?/, '');
+
+    if (hash.startsWith('g/')) {
+      const slug = hash.slice(2).split(/[/?]/)[0];
       if (slug) {
-        setActiveSlug(slug);
+        setActiveSlug(decodeURIComponent(slug));
         setCurrentView('public');
         return;
       }
-    } else if (path === '/dashboard' || path.startsWith('/dashboard/')) {
+    }
+
+    if (hash === 'dashboard' || hash.startsWith('dashboard/')) {
       setCurrentView('dashboard');
       return;
     }
+
     setCurrentView('landing');
   };
 
@@ -39,34 +46,38 @@ export default function App() {
     setCurrentView(view);
     if (view === 'public' && slug) {
       setActiveSlug(slug);
-      window.history.pushState({}, '', `/g/${slug}`);
+      window.location.hash = `#/g/${slug}`;
     } else if (view === 'dashboard') {
-      window.history.pushState({}, '', '/dashboard');
+      window.location.hash = '#/dashboard';
     } else {
-      window.history.pushState({}, '', '/');
+      window.location.hash = '#/';
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   useEffect(() => {
-    // Check logged in user
-    api.auth.me().then((user) => {
-      if (user) setCurrentUser(user);
-    }).catch(() => {});
+    // Restore the Firebase session, if there is one.
+    api.auth
+      .me()
+      .then(({ user }) => setCurrentUser(user))
+      .catch(() => setCurrentUser(null));
 
     updateRouteFromUrl();
 
-    const handlePopState = () => {
-      updateRouteFromUrl();
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('hashchange', updateRouteFromUrl);
+    return () => window.removeEventListener('hashchange', updateRouteFromUrl);
   }, []);
+
+  const openAuth = (mode: 'login' | 'register' = 'login') => {
+    setAuthMode(mode);
+    setIsAuthModalOpen(true);
+  };
 
   const handleOpenCreate = () => {
     if (!currentUser) {
-      // Prompt sign in / sign up first
-      setIsAuthModalOpen(true);
+      // Prompt sign in / sign up first, then continue into the wizard.
+      setPendingWizard(true);
+      openAuth('register');
     } else {
       setIsWizardOpen(true);
     }
@@ -74,8 +85,23 @@ export default function App() {
 
   const handleAuthSuccess = (user: User) => {
     setCurrentUser(user);
-    // If wizard was requested or user signed in to create, open wizard
-    setIsWizardOpen(true);
+    setIsAuthModalOpen(false);
+    if (pendingWizard) {
+      setPendingWizard(false);
+      setIsWizardOpen(true);
+    } else {
+      navigateTo('dashboard');
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    try {
+      const res = await api.auth.demoLogin();
+      setCurrentUser(res.user);
+      navigateTo('dashboard');
+    } catch {
+      openAuth('login');
+    }
   };
 
   const handleLogout = () => {
@@ -95,9 +121,13 @@ export default function App() {
       {currentView !== 'public' && (
         <Navbar
           currentUser={currentUser}
-          onOpenAuth={() => setIsAuthModalOpen(true)}
-          onOpenCreate={handleOpenCreate}
+          currentView={currentView === 'dashboard' ? 'admin-dashboard' : currentView}
+          onOpenAuth={openAuth}
+          onOpenDemo={handleDemoLogin}
+          onOpenDemoBook={() => navigateTo('public', 'wedding-nika-ana')}
+          onOpenWizard={handleOpenCreate}
           onOpenDashboard={() => navigateTo('dashboard')}
+          onGoHome={() => navigateTo('landing')}
           onLogout={handleLogout}
         />
       )}
@@ -108,7 +138,7 @@ export default function App() {
           <LandingPage
             onOpenCreate={handleOpenCreate}
             onViewDemo={() => navigateTo('public', 'wedding-nika-ana')}
-            onOpenAuth={() => setIsAuthModalOpen(true)}
+            onOpenAuth={() => openAuth('register')}
           />
         )}
 
@@ -133,7 +163,11 @@ export default function App() {
       {/* Modals */}
       <AuthModal
         isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authMode}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setPendingWizard(false);
+        }}
         onSuccess={handleAuthSuccess}
       />
 

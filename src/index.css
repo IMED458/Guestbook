@@ -2,7 +2,7 @@
 
 @font-face {
   font-family: 'BPG DedaEna';
-  src: url('/fonts/bpg-dedaena-nonblock.woff2') format('woff2');
+  src: url('./fonts/bpg-dedaena-nonblock.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -10,7 +10,7 @@
 
 @font-face {
   font-family: 'BPG Irubaqidze';
-  src: url('/fonts/bpg-irubaqidze.woff2') format('woff2');
+  src: url('./fonts/bpg-irubaqidze.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -18,7 +18,7 @@
 
 @font-face {
   font-family: 'BPG Classic';
-  src: url('/fonts/bpg-classic-medium.woff2') format('woff2');
+  src: url('./fonts/bpg-classic-medium.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -26,7 +26,7 @@
 
 @font-face {
   font-family: 'BPG Nostalgia';
-  src: url('/fonts/bpg-nostalgia.woff2') format('woff2');
+  src: url('./fonts/bpg-nostalgia.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -34,7 +34,7 @@
 
 @font-face {
   font-family: 'BPG Nateli';
-  src: url('/fonts/bpg-nateli.woff2') format('woff2');
+  src: url('./fonts/bpg-nateli.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -42,7 +42,7 @@
 
 @font-face {
   font-family: 'BPG Glaho';
-  src: url('/fonts/bpg-glaho.woff2') format('woff2');
+  src: url('./fonts/bpg-glaho.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;

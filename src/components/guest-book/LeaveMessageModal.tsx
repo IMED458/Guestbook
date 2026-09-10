@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { api } from '../../lib/api.ts';
+import { MAX_IMAGE_BYTES, MAX_VIDEO_BYTES, type UploadedMedia } from '../../lib/cloudinary.ts';
 import { GuestMessage } from '../../types.ts';
 import { useI18n } from '../../lib/i18n.tsx';
 
@@ -41,41 +42,78 @@ export const LeaveMessageModal: React.FC<LeaveMessageModalProps> = ({
   const [message, setMessage] = useState('');
   const [relationship, setRelationship] = useState<string>('Friend');
   const [selectedEmoji, setSelectedEmoji] = useState<string>('❤️');
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<UploadedMedia | null>(null);
+  const [video, setVideo] = useState<UploadedMedia | null>(null);
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [showVideoInput, setShowVideoInput] = useState(false);
+  const [uploadKind, setUploadKind] = useState<'IMAGE' | 'VIDEO' | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submittedSuccess, setSubmittedSuccess] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const isUploading = uploadKind !== null;
+
+  // Files go straight from the browser to Cloudinary; Firestore only ever
+  // stores the resulting URL.
+  const handleFileSelected = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    kind: 'IMAGE' | 'VIDEO'
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 10 * 1024 * 1024) {
-      setError(lang === 'ka' ? 'ფოტოს ზომა არ უნდა აღემატებოდეს 10 მბ-ს.' : 'Photo size must be less than 10 MB.');
+    const limit = kind === 'VIDEO' ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
+    if (file.size > limit) {
+      setError(
+        kind === 'VIDEO'
+          ? (lang === 'ka' ? 'ვიდეოს ზომა არ უნდა აღემატებოდეს 100 მბ-ს.' : 'Video size must be less than 100 MB.')
+          : (lang === 'ka' ? 'ფოტოს ზომა არ უნდა აღემატებოდეს 10 მბ-ს.' : 'Photo size must be less than 10 MB.')
+      );
+      e.target.value = '';
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPhotoPreview(reader.result as string);
-      setError(null);
-    };
-    reader.onerror = () => {
-      setError(lang === 'ka' ? 'ფოტოს წაკითხვა ვერ მოხერხდა. სცადეთ სხვა ფაილი.' : 'Could not read photo file. Please try another image.');
-    };
-    reader.readAsDataURL(file);
+    setError(null);
+    setUploadKind(kind);
+    setUploadProgress(0);
+
+    try {
+      const uploaded = await api.upload.uploadFile(file, setUploadProgress);
+      if (uploaded.type === 'VIDEO') {
+        setVideo(uploaded);
+        setVideoUrl('');
+      } else {
+        setPhoto(uploaded);
+      }
+    } catch (err: any) {
+      setError(
+        err?.message ||
+          (lang === 'ka' ? 'ფაილის ატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.' : 'Upload failed. Please try again.')
+      );
+      e.target.value = '';
+    } finally {
+      setUploadKind(null);
+      setUploadProgress(0);
+    }
   };
 
   const handleRemovePhoto = () => {
-    setPhotoPreview(null);
+    setPhoto(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveVideo = () => {
+    setVideo(null);
+    if (videoInputRef.current) {
+      videoInputRef.current.value = '';
     }
   };
 
@@ -96,20 +134,16 @@ export const LeaveMessageModal: React.FC<LeaveMessageModalProps> = ({
     setLoading(true);
 
     try {
-      const mediaUrls: { type: 'IMAGE' | 'VIDEO'; url: string }[] = [];
+      const mediaUrls: { type: 'IMAGE' | 'VIDEO'; url: string; thumbnailUrl?: string }[] = [];
 
-      if (photoPreview) {
-        mediaUrls.push({
-          type: 'IMAGE',
-          url: photoPreview
-        });
+      if (photo) {
+        mediaUrls.push({ type: 'IMAGE', url: photo.url, thumbnailUrl: photo.thumbnailUrl });
       }
 
-      if (videoUrl.trim()) {
-        mediaUrls.push({
-          type: 'VIDEO',
-          url: videoUrl.trim()
-        });
+      if (video) {
+        mediaUrls.push({ type: 'VIDEO', url: video.url, thumbnailUrl: video.thumbnailUrl });
+      } else if (videoUrl.trim()) {
+        mediaUrls.push({ type: 'VIDEO', url: videoUrl.trim() });
       }
 
       const res = await api.messages.submit(guestBookSlug, {
@@ -145,7 +179,8 @@ export const LeaveMessageModal: React.FC<LeaveMessageModalProps> = ({
     setName('');
     setEmail('');
     setMessage('');
-    setPhotoPreview(null);
+    setPhoto(null);
+    setVideo(null);
     setVideoUrl('');
     setShowVideoInput(false);
     setError(null);
@@ -320,41 +355,80 @@ export const LeaveMessageModal: React.FC<LeaveMessageModalProps> = ({
                     type="file"
                     ref={fileInputRef}
                     accept="image/*"
-                    onChange={handlePhotoUpload}
+                    onChange={(e) => handleFileSelected(e, 'IMAGE')}
                     className="hidden"
                     id="guest-photo-file-input"
                   />
                   <button
                     type="button"
+                    disabled={isUploading}
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex-1 py-2 px-3 border border-stone-200 rounded-xl text-xs font-semibold text-stone-700 hover:bg-stone-50 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                    className="flex-1 py-2 px-3 border border-stone-200 rounded-xl text-xs font-semibold text-stone-700 hover:bg-stone-50 flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
                   >
                     <Camera className="w-4 h-4 text-stone-500" />
                     <span>{t('guestbook', 'attachPhoto')}</span>
                   </button>
 
+                  <input
+                    type="file"
+                    ref={videoInputRef}
+                    accept="video/*"
+                    onChange={(e) => handleFileSelected(e, 'VIDEO')}
+                    className="hidden"
+                    id="guest-video-file-input"
+                  />
                   <button
                     type="button"
-                    onClick={() => setShowVideoInput(!showVideoInput)}
-                    className="py-2 px-3 border border-stone-200 rounded-xl text-xs font-semibold text-stone-700 hover:bg-stone-50 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                    disabled={isUploading}
+                    onClick={() => videoInputRef.current?.click()}
+                    className="flex-1 py-2 px-3 border border-stone-200 rounded-xl text-xs font-semibold text-stone-700 hover:bg-stone-50 flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
                   >
                     <Video className="w-4 h-4 text-stone-500" />
-                    <span>{t('guestbook', 'videoUrl')}</span>
+                    <span>{lang === 'ka' ? 'ვიდეოს ატვირთვა' : 'Upload Video'}</span>
                   </button>
                 </div>
 
+                <button
+                  type="button"
+                  onClick={() => setShowVideoInput(!showVideoInput)}
+                  className="text-[11px] text-stone-500 hover:text-stone-800 underline underline-offset-2 cursor-pointer"
+                >
+                  {lang === 'ka' ? 'ან ჩასვით ვიდეოს ბმული' : 'or paste a video link instead'}
+                </button>
+
+                {/* Upload progress */}
+                {isUploading && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] font-semibold text-stone-600">
+                      <span className="flex items-center gap-1.5">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        {uploadKind === 'VIDEO'
+                          ? (lang === 'ka' ? 'ვიდეო იტვირთება...' : 'Uploading video...')
+                          : (lang === 'ka' ? 'ფოტო იტვირთება...' : 'Uploading photo...')}
+                      </span>
+                      <span>{uploadProgress}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-stone-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-stone-900 rounded-full transition-all duration-200"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* Photo Preview */}
-                {photoPreview && (
+                {photo && (
                   <div className="relative rounded-xl overflow-hidden border border-stone-200 bg-stone-50 max-h-48 flex items-center justify-center">
                     <img
-                      src={photoPreview}
+                      src={photo.thumbnailUrl || photo.url}
                       alt="Uploaded preview"
                       className="max-h-44 object-contain"
                     />
                     <button
                       type="button"
                       onClick={handleRemovePhoto}
-                      className="absolute top-2 right-2 p-1.5 bg-stone-900/80 text-white rounded-full hover:bg-stone-900 transition-colors"
+                      className="absolute top-2 right-2 p-1.5 bg-stone-900/80 text-white rounded-full hover:bg-stone-900 transition-colors cursor-pointer"
                       title={lang === 'ka' ? 'ფოტოს წაშლა' : 'Remove photo'}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -362,8 +436,29 @@ export const LeaveMessageModal: React.FC<LeaveMessageModalProps> = ({
                   </div>
                 )}
 
+                {/* Video Preview */}
+                {video && (
+                  <div className="relative rounded-xl overflow-hidden border border-stone-200 bg-black">
+                    <video
+                      src={video.url}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      className="w-full max-h-48"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveVideo}
+                      className="absolute top-2 right-2 p-1.5 bg-stone-900/80 text-white rounded-full hover:bg-stone-900 transition-colors cursor-pointer"
+                      title={lang === 'ka' ? 'ვიდეოს წაშლა' : 'Remove video'}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+
                 {/* Video URL input */}
-                {showVideoInput && (
+                {showVideoInput && !video && (
                   <div className="pt-1">
                     <input
                       type="url"
@@ -381,7 +476,7 @@ export const LeaveMessageModal: React.FC<LeaveMessageModalProps> = ({
                 <button
                   id="submit-message-btn"
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || isUploading}
                   className="w-full py-3 px-6 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   {loading ? (
