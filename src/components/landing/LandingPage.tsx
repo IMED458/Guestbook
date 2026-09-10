@@ -17,6 +17,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { useI18n } from '../../lib/i18n.tsx';
+import { MemoryBookShowcase } from './MemoryBookShowcase.tsx';
 
 interface LandingPageProps {
   onOpenCreate: () => void;
@@ -180,96 +181,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
           </div>
 
-          {/* Preview Teaser Frame */}
+          {/* Luxury Interactive Memory Book Showcase */}
           <div className="mt-14 max-w-5xl mx-auto relative">
-            <div className="rounded-2xl p-2 sm:p-3 bg-stone-900/5 shadow-2xl border border-stone-200">
-              <div className="rounded-xl overflow-hidden bg-white border border-stone-200/80 shadow-inner">
-                {/* Mock Browser Header */}
-                <div className="h-10 bg-stone-100 border-b border-stone-200 px-4 flex items-center justify-between text-xs text-stone-500">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-rose-400 inline-block"></span>
-                    <span className="w-3 h-3 rounded-full bg-amber-400 inline-block"></span>
-                    <span className="w-3 h-3 rounded-full bg-emerald-400 inline-block"></span>
-                  </div>
-                  <div className="px-3 py-1 bg-white rounded-md border border-stone-200 text-stone-600 font-mono text-[11px] truncate max-w-[280px]">
-                    https://guestbook.app/g/wedding-nika-ana
-                  </div>
-                  <div className="flex items-center gap-2 text-[11px]">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>{lang === 'ka' ? 'ცოცხალი დემო' : 'Live & Interactive'}</span>
-                  </div>
-                </div>
-
-                {/* Mock Card Preview Header */}
-                <div className="p-6 sm:p-8 bg-[#FFF1F2] border-b border-rose-100 text-center">
-                  <span className="text-xs uppercase tracking-widest text-rose-800 font-bold">
-                    {lang === 'ka' ? 'ქორწილის ზეიმი' : 'WEDDING CELEBRATION'}
-                  </span>
-                  <h3 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900 mt-1">
-                    {lang === 'ka' ? 'ნიკასა და ანას ქორწილი' : 'Nika & Ana Wedding'}
-                  </h3>
-                  <p className="text-sm text-stone-600 mt-1">
-                    {lang === 'ka' ? '15 სექტემბერი, 2026 • მასპინძლები: ნიკა და ანა' : 'September 15, 2026 • Hosted by Nika & Ana'}
-                  </p>
-                  <p className="text-xs text-rose-900/80 italic mt-2 max-w-md mx-auto">
-                    {lang === 'ka'
-                      ? '„მოგესალმებით ჩვენს საქორწილო სტუმრების წიგნში ❤️ დაგვიტოვეთ თბილი სურვილები და ფოტოები, რომლებიც სამუდამოდ გაგვახარებს.“'
-                      : '“Welcome to our wedding guest book ❤️ Leave us a message or photo that we can keep forever.”'}
-                  </p>
-                </div>
-
-                {/* Sample Grid items */}
-                <div className="p-6 bg-stone-50 grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
-                  <div className="p-4 rounded-xl bg-white border border-stone-200 shadow-xs">
-                    <div className="flex items-center justify-between text-xs mb-2">
-                      <span className="font-semibold text-stone-900">ელენე და გიორგი</span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-50 text-amber-700 font-medium border border-amber-200/60">
-                        {lang === 'ka' ? 'ოჯახის წევრი' : 'Family'}
-                      </span>
-                    </div>
-                    <p className="text-xs text-stone-700 leading-relaxed">
-                      თქვენს ცხოვრებაში დაიწყო ყველაზე ლამაზი თავი! გისურვებთ ულევ სიყვარულს, ბედნიერებას და ურთიერთგაგებას ყოველ ნაბიჯზე! ❤️🥂
-                    </p>
-                    <div className="mt-3 flex items-center gap-2 text-xs text-stone-500">
-                      <span className="px-2 py-0.5 bg-rose-50 text-rose-600 rounded-md border border-rose-100 font-medium">❤️ 14</span>
-                      <span className="px-2 py-0.5 bg-stone-100 text-stone-600 rounded-md">🎉 8</span>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-white border border-stone-200 shadow-xs">
-                    <div className="flex items-center justify-between text-xs mb-2">
-                      <span className="font-semibold text-stone-900">David Miller</span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] bg-blue-50 text-blue-700 font-medium border border-blue-200/60">
-                        {lang === 'ka' ? 'მეგობარი' : 'Friend'}
-                      </span>
-                    </div>
-                    <p className="text-xs text-stone-700 leading-relaxed">
-                      To an incredible couple! So grateful to be part of your story and to celebrate this special day with you both! ✨
-                    </p>
-                    <div className="mt-3 flex items-center gap-2 text-xs text-stone-500">
-                      <span className="px-2 py-0.5 bg-rose-50 text-rose-600 rounded-md border border-rose-100 font-medium">❤️ 19</span>
-                      <span className="px-2 py-0.5 bg-stone-100 text-stone-600 rounded-md">👏 12</span>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-white border border-stone-200 shadow-xs">
-                    <div className="flex items-center justify-between text-xs mb-2">
-                      <span className="font-semibold text-stone-900">მარიამ კ.</span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] bg-purple-50 text-purple-700 font-medium border border-purple-200/60">
-                        {lang === 'ka' ? 'კოლეგა' : 'Colleague'}
-                      </span>
-                    </div>
-                    <p className="text-xs text-stone-700 leading-relaxed">
-                      ანა და ნიკა, ულამაზესი წყვილი ხართ! ძალიან გვიხარია თქვენი ბედნიერება. მუდამ ასე იბრწყინეთ! 🥰🍾
-                    </p>
-                    <div className="mt-3 flex items-center gap-2 text-xs text-stone-500">
-                      <span className="px-2 py-0.5 bg-rose-50 text-rose-600 rounded-md border border-rose-100 font-medium">🥰 9</span>
-                      <span className="px-2 py-0.5 bg-stone-100 text-stone-600 rounded-md">❤️ 11</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <MemoryBookShowcase
+              onViewDemo={onViewDemo}
+              onCreateBook={onOpenCreate}
+            />
           </div>
         </div>
       </section>

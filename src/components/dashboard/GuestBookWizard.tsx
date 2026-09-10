@@ -17,9 +17,10 @@ import {
   X
 } from 'lucide-react';
 import { api } from '../../lib/api.ts';
-import { EventType, ThemePreset, GuestBook } from '../../types.ts';
-import { THEME_PRESETS } from '../../lib/theme.ts';
+import { EventType, ThemePreset, GuestBook, FontStyle } from '../../types.ts';
+import { THEME_PRESETS, FONT_OPTIONS, getFontFamily } from '../../lib/theme.ts';
 import { useI18n } from '../../lib/i18n.tsx';
+import { FontPicker } from '../common/FontPicker.tsx';
 
 interface GuestBookWizardProps {
   isOpen: boolean;
@@ -112,6 +113,7 @@ export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
     'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1600&q=80'
   );
   const [themePreset, setThemePreset] = useState<ThemePreset>('romantic');
+  const [fontStyle, setFontStyle] = useState<FontStyle>('handwriting');
   const [isModerated, setIsModerated] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
   const [password, setPassword] = useState('');
@@ -126,12 +128,15 @@ export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
       if (type === 'wedding') {
         setTitle(lang === 'ka' ? 'ნიკა და ანას ქორწილი' : 'Nika & Ana Wedding');
         setWelcomeMessage(lang === 'ka' ? 'მოგესალმებით ჩვენს საქორწილო სტუმრების წიგნში ❤️ დაგვიტოვეთ სამახსოვრო სიტყვები და ფოტოები.' : 'Welcome to our wedding guest book ❤️ Leave us a memory or photo to cherish forever.');
+        setFontStyle('handwriting');
       } else if (type === 'birthday') {
         setTitle(lang === 'ka' ? 'მაიას 30-ე დაბადების დღე' : 'Maya’s 30th Birthday Bash');
         setWelcomeMessage(lang === 'ka' ? 'ძალიან მიხარია, რომ ჩემთან ერთად ხართ! გაგვიზიარეთ თქვენი სურვილები და ფოტოები 🎉' : 'So glad you are here to celebrate with me! Drop your birthday wishes and photos 🎉');
+        setFontStyle('classic_script');
       } else if (type === 'hotel') {
         setTitle(lang === 'ka' ? 'ვილა სანესტის სტუმრების წიგნი' : 'Villa Sunset Guest Book');
         setWelcomeMessage(lang === 'ka' ? 'მოგესალმებით ჩვენს ვილაში! გთხოვთ გაგვიზიაროთ თქვენი შთაბეჭდილებები და მოგონებები 🌿' : 'Welcome to our villa! Please share your travel experiences, thoughts and memories 🌿');
+        setFontStyle('serif');
       } else {
         setTitle(lang === 'ka' ? `${found.labelKa}-ის სტუმრების წიგნი` : `${found.labelEn} Guest Book`);
       }
@@ -143,7 +148,11 @@ export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
     setLoading(true);
 
     try {
-      const selectedThemeSettings = THEME_PRESETS[themePreset].settings;
+      const basePreset = THEME_PRESETS[themePreset].settings;
+      const selectedThemeSettings = {
+        ...basePreset,
+        fontStyle: fontStyle
+      };
 
       const newBook = await api.guestBooks.create({
         title: title.trim() || (lang === 'ka' ? 'ჩემი სტუმრების წიგნი' : 'My Guest Book'),
@@ -382,38 +391,103 @@ export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
             </div>
           )}
 
-          {/* STEP 7: THEME & PRIVACY */}
+          {/* STEP 7: THEME & FONT STYLES */}
           {step === 7 && (
-            <div>
-              <h3 className="text-lg font-bold text-stone-900 mb-1">
-                {lang === 'ka' ? 'აირჩიეთ დიზაინის თემა და კონფიდენციალობა' : 'Select an aesthetic theme & privacy'}
-              </h3>
-              <p className="text-xs text-stone-600 mb-4">
-                {lang === 'ka' ? 'თემა ცვლის ფერთა გამას, ტიპოგრაფიას და ატმოსფეროს.' : 'Each preset changes the color palette, typography, and card atmosphere.'}
-              </p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-6">
-                {(Object.keys(THEME_PRESETS) as ThemePreset[]).map((key) => {
-                  const preset = THEME_PRESETS[key];
-                  const isSelected = themePreset === key;
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setThemePreset(key)}
-                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                        isSelected
-                          ? 'border-stone-900 bg-stone-900 text-white shadow-xs'
-                          : 'border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-800'
-                      }`}
-                    >
-                      <div
-                        className="w-5 h-5 rounded-full mb-2 border border-black/10"
-                        style={{ backgroundColor: preset.previewPrimary }}
-                      />
-                      <span className="text-xs font-bold block">{preset.name}</span>
-                    </button>
-                  );
-                })}
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-bold text-stone-900 mb-1">
+                  {lang === 'ka'
+                    ? 'აირჩიეთ დიზაინის თემა და შრიფტი'
+                    : 'Select Aesthetic Theme & Font Family'}
+                </h3>
+                <p className="text-xs text-stone-600">
+                  {lang === 'ka'
+                    ? 'შეგიძლიათ დააყენოთ ქართული ხელნაწერი, კალიგრაფია ან ელეგანტური სერიფი.'
+                    : 'Select from authentic Georgian cursive scripts, royal calligraphy, or clean modern fonts.'}
+                </p>
+              </div>
+
+              {/* Theme Presets */}
+              <div>
+                <label className="block text-xs font-bold text-stone-800 mb-2">
+                  {lang === 'ka' ? '1. ფერთა პალიტრა (პრესეტი)' : '1. Color Palette Preset'}
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {(Object.keys(THEME_PRESETS) as ThemePreset[]).map((key) => {
+                    const preset = THEME_PRESETS[key];
+                    const isSelected = themePreset === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setThemePreset(key)}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-stone-900 bg-stone-900 text-white shadow-xs'
+                            : 'border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-800'
+                        }`}
+                      >
+                        <div
+                          className="w-4 h-4 rounded-full mb-1.5 border border-black/10"
+                          style={{ backgroundColor: preset.previewPrimary }}
+                        />
+                        <span className="text-[11px] font-bold block">{preset.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Font Selection */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-stone-800">
+                    {lang === 'ka'
+                      ? '2. შრიფტი და ხელნაწერის სტილი'
+                      : '2. Typography & Handwriting Style'}
+                  </label>
+                  <span className="text-[11px] text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md font-semibold">
+                    {lang === 'ka' ? 'ქართული შრიფტების მხარდაჭერით' : 'Georgian fonts supported'}
+                  </span>
+                </div>
+
+                <FontPicker
+                  selectedFont={fontStyle}
+                  onChange={setFontStyle}
+                  compact={true}
+                  showCustomPreviewInput={false}
+                />
+              </div>
+
+              {/* Live Preview Card */}
+              <div className="p-4 rounded-2xl border border-stone-200 bg-stone-50 space-y-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500 block">
+                  {lang === 'ka' ? 'როგორ გამოჩნდება თქვენს წიგნში:' : 'Live Preview in your Book:'}
+                </span>
+                <div
+                  className="p-5 rounded-xl border shadow-sm transition-all"
+                  style={{
+                    backgroundColor: THEME_PRESETS[themePreset].previewBg,
+                    fontFamily: getFontFamily(fontStyle)
+                  }}
+                >
+                  <div
+                    className="text-xs font-semibold tracking-wider uppercase mb-1"
+                    style={{ color: THEME_PRESETS[themePreset].previewPrimary }}
+                  >
+                    {hostNames || title}
+                  </div>
+                  <div className="text-base sm:text-lg font-normal text-stone-900 leading-snug">
+                    &ldquo;{welcomeMessage}&rdquo;
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-stone-200/60 flex items-center justify-between text-xs text-stone-500">
+                    <span>{eventDate}</span>
+                    <span className="italic">
+                      {lang === 'ka' ? 'შრიფტი:' : 'Font:'}{' '}
+                      {FONT_OPTIONS.find((f) => f.id === fontStyle)?.nameKa || fontStyle}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* Privacy & Moderation Toggles */}
@@ -506,6 +580,12 @@ export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
                 <div className="flex justify-between py-1 border-b border-stone-200/60">
                   <span className="text-stone-500">{lang === 'ka' ? 'თემა:' : 'Theme:'}</span>
                   <span className="font-semibold text-stone-900 capitalize">{themePreset}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-stone-200/60">
+                  <span className="text-stone-500">{lang === 'ka' ? 'შრიფტი:' : 'Font Style:'}</span>
+                  <span className="font-semibold text-stone-900">
+                    {FONT_OPTIONS.find((f) => f.id === fontStyle)?.nameKa || fontStyle}
+                  </span>
                 </div>
                 <div className="flex justify-between py-1">
                   <span className="text-stone-500">{lang === 'ka' ? 'მოდერაცია:' : 'Moderation:'}</span>

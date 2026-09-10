@@ -10,14 +10,15 @@ import {
   Loader2,
   Shield,
   Clock,
-  Play
+  Play,
+  PenTool
 } from 'lucide-react';
 import { api } from '../../lib/api.ts';
-import { GuestBook, GuestMessage } from '../../types.ts';
+import { GuestBook, GuestMessage, FontStyle } from '../../types.ts';
 import { LeaveMessageModal } from './LeaveMessageModal.tsx';
 import { ShareModal } from './ShareModal.tsx';
 import { ImageLightbox } from './ImageLightbox.tsx';
-import { getFontFamily, isDarkColor } from '../../lib/theme.ts';
+import { getFontFamily, isDarkColor, FONT_OPTIONS } from '../../lib/theme.ts';
 import { useI18n, LanguageSwitcher } from '../../lib/i18n.tsx';
 
 interface GuestBookPublicViewProps {
@@ -50,6 +51,7 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [lightboxGuest, setLightboxGuest] = useState<string | undefined>(undefined);
+  const [previewFont, setPreviewFont] = useState<FontStyle | null>(null);
 
   const loadGuestBook = async (passwordAttempt?: string) => {
     setLoading(true);
@@ -214,7 +216,8 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
 
   const theme = guestBook.theme;
   const isDark = isDarkColor(theme.bgColor);
-  const fontFamily = getFontFamily(theme.fontStyle);
+  const effectiveFontStyle = previewFont || theme.fontStyle || 'serif';
+  const fontFamily = getFontFamily(effectiveFontStyle);
 
   // Dynamic card styling classes
   const getCardClasses = () => {
@@ -251,10 +254,9 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
 
   return (
     <div
-      className="min-h-screen transition-colors duration-300"
+      className="min-h-screen transition-colors duration-300 font-sans"
       style={{
-        backgroundColor: theme.bgColor,
-        fontFamily
+        backgroundColor: theme.bgColor
       }}
     >
       {/* Top Floating Control Bar */}
@@ -344,7 +346,10 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
                 </span>
               </div>
 
-              <h1 className="text-3xl sm:text-5xl md:text-6xl font-serif font-bold text-white tracking-tight leading-tight drop-shadow-md">
+              <h1
+                className="text-3xl sm:text-5xl md:text-6xl font-serif font-bold text-white tracking-tight leading-tight drop-shadow-md"
+                style={{ fontFamily: "'Noto Serif Georgian', 'Lora', Georgia, serif" }}
+              >
                 {guestBook.title}
               </h1>
             </div>
@@ -360,9 +365,10 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
           </div>
 
           <p
-            className={`text-base sm:text-xl italic leading-relaxed max-w-2xl mx-auto ${
+            className={`text-base sm:text-xl italic leading-relaxed max-w-2xl mx-auto font-serif ${
               isDark ? 'text-stone-200' : 'text-stone-800'
             }`}
+            style={{ fontFamily: "'Noto Serif Georgian', 'Lora', Georgia, serif" }}
           >
             &ldquo;{guestBook.welcomeMessage}&rdquo;
           </p>
@@ -510,9 +516,10 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
 
                   {/* Message Body */}
                   <p
-                    className={`text-sm leading-relaxed whitespace-pre-line mb-4 ${
-                      isDark ? 'text-stone-300' : 'text-stone-700'
+                    className={`text-base leading-relaxed whitespace-pre-line mb-4 transition-all font-medium ${
+                      isDark ? 'text-stone-300' : 'text-stone-800'
                     }`}
+                    style={{ fontFamily }}
                   >
                     {msg.message}
                   </p>
@@ -617,6 +624,40 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
         guestName={lightboxGuest}
         onClose={() => setLightboxUrl(null)}
       />
+
+      {/* Floating Demo Font Switcher (available on demo book) */}
+      {slug === 'wedding-nika-ana' && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 max-w-[95vw] px-4 py-2.5 rounded-full bg-stone-900/90 text-white shadow-2xl backdrop-blur-md border border-stone-700/80 flex items-center gap-2 text-xs font-sans overflow-x-auto">
+          <div className="flex items-center gap-1.5 whitespace-nowrap pr-2 border-r border-stone-700">
+            <PenTool className="w-3.5 h-3.5 text-rose-400" />
+            <span className="font-bold text-[11px] text-stone-300">
+              {lang === 'ka' ? 'შრიფტი:' : 'Font:'}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            {[
+              { id: 'serif' as FontStyle, name: '📖 საზეიმო სერიფი' },
+              { id: 'sans' as FontStyle, name: '💎 თანამედროვე სადა' },
+              { id: 'classic_script' as FontStyle, name: '🖋️ კლასიკური' },
+              { id: 'playfair' as FontStyle, name: '✨ ედიტორიალი' },
+              { id: 'handwriting' as FontStyle, name: '🌸 კურსივი' }
+            ].map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setPreviewFont(f.id)}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  effectiveFontStyle === f.id
+                    ? 'bg-rose-600 text-white shadow-xs'
+                    : 'bg-stone-800 hover:bg-stone-700 text-stone-300'
+                }`}
+              >
+                {f.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -16,7 +16,17 @@ export type ThemePreset =
   | 'luxury'
   | 'pastel';
 
-export type FontStyle = 'serif' | 'sans' | 'playfair' | 'mono';
+export type FontStyle =
+  | 'handwriting'
+  | 'calligraphy'
+  | 'classic_script'
+  | 'nostalgia'
+  | 'serif'
+  | 'sans'
+  | 'playfair'
+  | 'nateli'
+  | 'glaho'
+  | 'mono';
 export type CardStyle = 'soft' | 'border' | 'elevated';
 export type ButtonStyle = 'pill' | 'rounded' | 'minimal';
 

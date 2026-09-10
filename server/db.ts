@@ -15,7 +15,17 @@ export interface ThemeSettings {
   themePreset: 'classic' | 'elegant' | 'minimal' | 'romantic' | 'dark' | 'luxury' | 'pastel';
   bgColor: string;
   primaryColor: string;
-  fontStyle: 'serif' | 'sans' | 'playfair' | 'mono';
+  fontStyle:
+    | 'handwriting'
+    | 'calligraphy'
+    | 'classic_script'
+    | 'nostalgia'
+    | 'serif'
+    | 'sans'
+    | 'playfair'
+    | 'nateli'
+    | 'glaho'
+    | 'mono';
   cardStyle: 'soft' | 'border' | 'elevated';
   buttonStyle: 'pill' | 'rounded' | 'minimal';
 }
