@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowRight,
   ArrowLeft,
@@ -22,6 +22,8 @@ import { EventType, ThemePreset, GuestBook, FontStyle } from '../../types.ts';
 import { THEME_PRESETS, FONT_OPTIONS, getFontFamily } from '../../lib/theme.ts';
 import { useI18n } from '../../lib/i18n.tsx';
 import { FontPicker } from '../common/FontPicker.tsx';
+import { CoverImagePicker } from '../common/CoverImagePicker.tsx';
+import { COVER_PRESETS } from '../../lib/cover-presets.ts';
 
 interface GuestBookWizardProps {
   isOpen: boolean;
@@ -81,14 +83,6 @@ const EVENT_TYPES: { id: EventType; labelEn: string; labelKa: string; icon: any;
   }
 ];
 
-const CURATED_COVERS = [
-  'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1600&q=80',
-  'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1600&q=80',
-  'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1600&q=80',
-  'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1600&q=80',
-  'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1600&q=80',
-  'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1600&q=80'
-];
 
 export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
   isOpen,
@@ -120,6 +114,13 @@ export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
   const [password, setPassword] = useState('');
 
   const { ref: dialogRef } = useModalA11y(isOpen, onClose);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  // Each step starts at the top of its own scroll region, so the heading of
+  // the new step is what you see rather than the middle of a long list.
+  useEffect(() => {
+    bodyRef.current?.scrollTo({ top: 0 });
+  }, [step]);
 
   if (!isOpen) return null;
 
@@ -194,17 +195,17 @@ export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/70 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/70 backdrop-blur-sm animate-fadeIn">
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="wizard-title"
         id="guestbook-wizard-container"
-        className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden relative my-6"
+        className="w-full max-w-2xl max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden relative flex flex-col"
       >
-        {/* Header with Progress Bar */}
-        <div className="p-6 sm:p-8 pb-4 border-b border-stone-100 flex items-center justify-between">
+        {/* Header with Progress Bar — stays visible while the body scrolls */}
+        <div className="shrink-0 p-6 sm:p-8 pb-4 border-b border-stone-100 flex items-center justify-between">
           <div>
             <span className="text-xs font-bold uppercase tracking-widest text-stone-600 block mb-1">
               {lang === 'ka' ? `ნაბიჯი ${step} / 8-დან` : `Step ${step} of 8`}
@@ -223,7 +224,7 @@ export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
         </div>
 
         {/* Progress Bar Line */}
-        <div className="w-full bg-stone-100 h-1.5">
+        <div className="shrink-0 w-full bg-stone-100 h-1.5">
           <div
             className="bg-stone-900 h-1.5 transition-all duration-300"
             style={{ width: `${(step / 8) * 100}%` }}
@@ -231,13 +232,16 @@ export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
         </div>
 
         {error && (
-          <div className="m-6 mb-0 p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-medium">
+          <div
+            role="alert"
+            className="shrink-0 m-6 mb-0 p-3.5 bg-rose-50 border border-rose-300 text-rose-800 text-xs rounded-xl font-medium"
+          >
             {error}
           </div>
         )}
 
-        {/* Step Content */}
-        <div className="p-6 sm:p-8 min-h-[360px] flex flex-col justify-center">
+        {/* Step Content — the only scrolling region */}
+        <div ref={bodyRef} className="flex-1 min-h-0 overflow-y-auto p-6 sm:p-8">
           {/* STEP 1: EVENT TYPE */}
           {step === 1 && (
             <div>
@@ -372,33 +376,10 @@ export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
               <p className="text-xs text-stone-600 mb-4">
                 {lang === 'ka' ? 'აირჩიეთ შემოთავაზებული ფოტოებიდან ან შეიყვანეთ საკუთარი ბმული.' : 'Select from our curated photography or paste your own custom image URL.'}
               </p>
-              <div className="grid grid-cols-3 gap-2.5 mb-4">
-                {CURATED_COVERS.map((img, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setCoverImage(img)}
-                    className={`relative h-20 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
-                      coverImage === img ? 'border-stone-900 scale-102 shadow-md' : 'border-transparent opacity-80 hover:opacity-100'
-                    }`}
-                  >
-                    <img
-                      src={img}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-              <div className="text-xs font-semibold text-stone-700 mb-1">
-                {lang === 'ka' ? 'ან საკუთარი ფოტოს ბმული (URL):' : 'Or Custom Image URL:'}
-              </div>
-              <input
-                type="url"
+              <CoverImagePicker
                 value={coverImage}
-                onChange={(e) => setCoverImage(e.target.value)}
-                placeholder="https://..."
-                className="w-full px-3.5 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-stone-900"
+                onChange={setCoverImage}
+                presets={COVER_PRESETS}
               />
             </div>
           )}
@@ -612,8 +593,8 @@ export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
           )}
         </div>
 
-        {/* Footer Navigation Buttons */}
-        <div className="p-6 bg-stone-50 border-t border-stone-100 flex items-center justify-between">
+        {/* Footer Navigation Buttons — always reachable */}
+        <div className="shrink-0 p-6 bg-stone-50 border-t border-stone-100 flex items-center justify-between">
           {step > 1 ? (
             <button
               type="button"

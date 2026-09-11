@@ -138,6 +138,7 @@ export default function App() {
   };
 
   const handleGuestBookCreated = (newBook: GuestBook) => {
+    setIsWizardOpen(false);
     setInitialBookIdForDashboard(newBook.id);
     navigateTo('dashboard');
   };

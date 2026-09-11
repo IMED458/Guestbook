@@ -25,6 +25,7 @@ import QRCode from 'qrcode';
 import { auth, COL, db } from './firebase.ts';
 import { uploadToCloudinary, type UploadedMedia } from './cloudinary.ts';
 import { allows } from './consent.ts';
+import { slugify } from './slug.ts';
 import { DashboardStats, GuestBook, GuestMessage, Media, User } from '../types.ts';
 
 const VISITOR_ID_KEY = 'gb_visitor_id';
@@ -90,8 +91,13 @@ function waitForAuth(): Promise<FirebaseUser | null> {
   return authReady;
 }
 
-function requireUid(): string {
-  const uid = auth.currentUser?.uid;
+/**
+ * On a cold page load `auth.currentUser` is still null while the SDK restores
+ * the persisted session, so every caller must wait for that to settle before
+ * deciding nobody is signed in.
+ */
+async function requireUid(): Promise<string> {
+  const uid = auth.currentUser?.uid || (await waitForAuth())?.uid;
   if (!uid) throw new Error('Authentication required');
   return uid;
 }
@@ -148,15 +154,29 @@ async function fetchGuestBookBySlug(slug: string): Promise<{ id: string; data: a
   return { id: first.id, data: first.data() };
 }
 
+/**
+ * Security rules are not filters: Firestore rejects a list query outright
+ * unless the query itself proves every matching document is readable. The
+ * messages rule allows `status == 'APPROVED' || ownerId == uid`, so a public
+ * read must constrain status and an owner read must constrain ownerId —
+ * filtering client-side instead would fail with permission-denied.
+ *
+ * Both are equality-only queries, so Firestore's automatic single-field
+ * indexes serve them and no composite index is needed. Ordering is done
+ * client-side.
+ */
 async function fetchMessages(
   guestBookId: string,
   opts: { approvedOnly: boolean }
 ): Promise<GuestMessage[]> {
   const clauses = [where('guestBookId', '==', guestBookId)];
-  if (opts.approvedOnly) clauses.push(where('status', '==', 'APPROVED'));
 
-  // Equality-only queries are served by Firestore's automatic single-field
-  // indexes, so this needs no composite index. Ordering happens client-side.
+  if (opts.approvedOnly) {
+    clauses.push(where('status', '==', 'APPROVED'));
+  } else {
+    clauses.push(where('ownerId', '==', await requireUid()));
+  }
+
   const snap = await getDocs(query(collection(db, COL.messages), ...clauses));
   return snap.docs.map((d) => normaliseMessage(d.id, d.data())).sort(byNewest);
 }
@@ -202,17 +222,11 @@ async function recordView(guestBookId: string): Promise<void> {
 }
 
 async function uniqueSlug(title: string, excludeId?: string): Promise<string> {
-  const base =
-    title
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '') || 'guest-book';
+  const base = slugify(title);
 
   let slug = base;
   let counter = 2;
-  // Slug collisions are rare; a handful of point lookups is plenty.
+  // Collisions are rare; a handful of point lookups is plenty.
   for (let i = 0; i < 20; i++) {
     const existing = await fetchGuestBookBySlug(slug);
     if (!existing || existing.id === excludeId) return slug;
@@ -235,9 +249,15 @@ async function seedDemoGuestBook(ownerId: string): Promise<void> {
 
   const now = Date.now();
   const bookId = newId('gb');
-  const batch = writeBatch(db);
 
-  batch.set(doc(db, COL.guestBooks, bookId), {
+  // A week of plausible traffic so the analytics tab is not empty.
+  const viewsByDay: Record<string, number> = {};
+  for (let i = 6; i >= 0; i--) {
+    const day = new Date(now - i * 86400000).toISOString().slice(0, 10);
+    viewsByDay[day] = 12 + Math.floor(Math.random() * 15);
+  }
+
+  await setDoc(doc(db, COL.guestBooks, bookId), {
     ownerId,
     title: 'Nika & Ana Wedding',
     slug: DEMO_SLUG,
@@ -259,11 +279,13 @@ async function seedDemoGuestBook(ownerId: string): Promise<void> {
       cardStyle: 'soft',
       buttonStyle: 'pill',
     },
-    viewsByDay: {},
-    viewsTotal: 0,
+    viewsByDay,
+    viewsTotal: Object.values(viewsByDay).reduce((a, b) => a + b, 0),
     createdAt: new Date(now - 14 * 86400000).toISOString(),
     updatedAt: new Date(now).toISOString(),
   });
+
+  const batch = writeBatch(db);
 
   const demoMessages = [
     {
@@ -341,15 +363,6 @@ async function seedDemoGuestBook(ownerId: string): Promise<void> {
     });
   });
 
-  // A week of plausible traffic so the analytics tab is not empty.
-  const viewsByDay: Record<string, number> = {};
-  for (let i = 6; i >= 0; i--) {
-    const day = new Date(now - i * 86400000).toISOString().slice(0, 10);
-    viewsByDay[day] = 12 + Math.floor(Math.random() * 15);
-  }
-  const viewsTotal = Object.values(viewsByDay).reduce((a, b) => a + b, 0);
-  batch.update(doc(db, COL.guestBooks, bookId), { viewsByDay, viewsTotal });
-
   await batch.commit();
 }
 
@@ -399,8 +412,9 @@ export const api = {
 
       try {
         await seedDemoGuestBook(cred.user.uid);
-      } catch {
-        // A missing demo book is not worth failing the sign-in over.
+      } catch (seedErr) {
+        // Sign-in still succeeds, but the reason must not vanish silently.
+        console.error('Could not seed the demo guest book:', seedErr);
       }
 
       return {
@@ -422,7 +436,7 @@ export const api = {
 
   guestBooks: {
     async list(): Promise<GuestBook[]> {
-      const uid = requireUid();
+      const uid = await requireUid();
       const snap = await getDocs(
         query(collection(db, COL.guestBooks), where('ownerId', '==', uid))
       );
@@ -442,7 +456,10 @@ export const api = {
       const found = await fetchGuestBookBySlug(slug);
       if (!found) throw new Error('Guest book not found');
 
-      const isOwner = Boolean(auth.currentUser && auth.currentUser.uid === found.data.ownerId);
+      // Wait for the restored session, or opening your own book from a fresh
+      // tab would report you as a stranger.
+      const viewer = auth.currentUser || (await waitForAuth());
+      const isOwner = Boolean(viewer && viewer.uid === found.data.ownerId);
       const unlockKey = `${UNLOCK_PREFIX}${found.id}`;
 
       if (found.data.isPrivate && !isOwner) {
@@ -485,7 +502,7 @@ export const api = {
     },
 
     async create(data: Partial<GuestBook>): Promise<GuestBook> {
-      const uid = requireUid();
+      const uid = await requireUid();
       const now = new Date().toISOString();
       const id = newId('gb');
       const slug = await uniqueSlug(data.title || 'guest book');
@@ -518,7 +535,7 @@ export const api = {
     },
 
     async update(id: string, updates: Partial<GuestBook>): Promise<GuestBook> {
-      requireUid();
+      await requireUid();
       const { id: _ignored, password, slug, ...rest } = updates as any;
 
       const payload: Record<string, any> = { ...rest, updatedAt: new Date().toISOString() };
@@ -538,13 +555,20 @@ export const api = {
     },
 
     async delete(id: string): Promise<{ success: boolean }> {
-      requireUid();
-
+      const uid = await requireUid();
       const messages = await getDocs(
-        query(collection(db, COL.messages), where('guestBookId', '==', id))
+        query(
+          collection(db, COL.messages),
+          where('guestBookId', '==', id),
+          where('ownerId', '==', uid)
+        )
       );
       const emails = await getDocs(
-        query(collection(db, COL.messageEmails), where('guestBookId', '==', id))
+        query(
+          collection(db, COL.messageEmails),
+          where('guestBookId', '==', id),
+          where('ownerId', '==', uid)
+        )
       );
 
       const batch = writeBatch(db);
@@ -634,8 +658,13 @@ export const api = {
 
       // Private emails live in their own collection so guests can never read them.
       try {
+        const ownerId = await requireUid();
         const emailSnap = await getDocs(
-          query(collection(db, COL.messageEmails), where('guestBookId', '==', guestBookId))
+          query(
+            collection(db, COL.messageEmails),
+            where('guestBookId', '==', guestBookId),
+            where('ownerId', '==', ownerId)
+          )
         );
         const emails = new Map(emailSnap.docs.map((d) => [d.id, d.data().email as string]));
         list = list.map((m) => (emails.has(m.id) ? { ...m, email: emails.get(m.id) } : m));
@@ -762,7 +791,7 @@ export const api = {
       messageId: string,
       status: 'APPROVED' | 'PENDING' | 'HIDDEN'
     ): Promise<{ success: boolean; status: string }> {
-      requireUid();
+      await requireUid();
       await updateDoc(doc(db, COL.messages, messageId), {
         status,
         updatedAt: new Date().toISOString(),
@@ -771,7 +800,7 @@ export const api = {
     },
 
     async delete(messageId: string): Promise<{ success: boolean }> {
-      requireUid();
+      await requireUid();
       await deleteDoc(doc(db, COL.messages, messageId));
       try {
         await deleteDoc(doc(db, COL.messageEmails, messageId));

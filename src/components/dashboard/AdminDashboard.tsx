@@ -37,6 +37,8 @@ import { GuestBook, GuestMessage, DashboardStats, Media, AdminTab, ThemePreset, 
 import { THEME_PRESETS, getFontFamily, FONT_OPTIONS } from '../../lib/theme.ts';
 import { PrintableGuestBook } from './PrintableGuestBook.tsx';
 import { FontPicker } from '../common/FontPicker.tsx';
+import { CoverImagePicker } from '../common/CoverImagePicker.tsx';
+import { COVER_PRESETS } from '../../lib/cover-presets.ts';
 import { useI18n, RELATIONSHIPS_TRANSLATIONS, EVENT_TYPES_TRANSLATIONS, THEME_PRESET_TRANSLATIONS } from '../../lib/i18n.tsx';
 
 interface AdminDashboardProps {
@@ -145,10 +147,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setMessages(bookMessages);
       setMediaList(bookMedia);
 
-      const targetBook = guestBooks.find((b) => b.id === bookId);
-      if (targetBook) {
+      // Read the slug straight from Firestore rather than from `guestBooks`,
+      // which is stale inside this closure on the very first load.
+      const targetBook = await api.guestBooks.get(bookId);
+      if (targetBook?.slug) {
+        setQrPngUrl(null);
         const publicUrl = publicGuestBookUrl(targetBook.slug);
-        api.qrcode.getPng(publicUrl).then(setQrPngUrl).catch(() => {});
+        api.qrcode
+          .getPng(publicUrl)
+          .then(setQrPngUrl)
+          .catch((err) => console.error('QR code generation failed:', err));
       }
     } catch (err) {
       console.error('Error loading book data:', err);
@@ -160,6 +168,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   useEffect(() => {
     loadGuestBooks();
   }, []);
+
+  // App passes the id of a book the wizard just created. The dashboard is
+  // already mounted at that point, so nothing else would refresh the list.
+  useEffect(() => {
+    if (!initialGuestBookId || initialGuestBookId === selectedBookId) return;
+    setSelectedBookId(initialGuestBookId);
+    loadGuestBooks();
+  }, [initialGuestBookId]);
 
   useEffect(() => {
     if (selectedBookId) {
@@ -341,7 +357,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     return (
       <PrintableGuestBook
         guestBook={currentBook}
-        messages={messages}
         onBack={() => setIsPrintMode(false)}
       />
     );
@@ -964,7 +979,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             <div className="mb-3">
                               <img
                                 src={photo.url}
-                                alt="attachment"
+                                alt={lang === 'ka' ? `${msg.name}-ის მიერ ატვირთული ფოტო` : `Photo uploaded by ${msg.name}`}
                                 className="w-24 h-24 object-cover rounded-lg border border-stone-200"
                               />
                             </div>
@@ -1055,7 +1070,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     >
                       <img
                         src={item.url}
-                        alt="Guest media"
+                        alt={lang === 'ka' ? `${item.guestName}-ის მიერ ატვირთული ფოტო` : `Photo uploaded by ${item.guestName}`}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end text-white text-xs">
@@ -1317,7 +1332,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     {qrPngUrl ? (
                       <img
                         src={qrPngUrl}
-                        alt="Guest Book QR Code"
+                        alt={
+                          lang === 'ka'
+                            ? `QR კოდი — ${currentBook?.title}`
+                            : `QR code for ${currentBook?.title}`
+                        }
                         className="w-56 h-56 mx-auto rounded-xl shadow-xs"
                       />
                     ) : (
@@ -1375,7 +1394,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     {qrPngUrl && (
                       <img
                         src={qrPngUrl}
-                        alt="QR Code"
+                        alt={
+                          lang === 'ka'
+                            ? `QR კოდი — ${currentBook?.title}`
+                            : `QR code for ${currentBook?.title}`
+                        }
                         className="w-36 h-36 mx-auto rounded-lg border border-stone-200"
                       />
                     )}
@@ -1451,18 +1474,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-stone-700 mb-1">
-                      {lang === 'ka' ? 'ყდის ფოტოს ბმული (URL)' : 'Cover Image URL'}
-                    </label>
-                    <input
-                      type="url"
+                    <span className="block text-xs font-semibold text-stone-800 mb-2">
+                      {lang === 'ka' ? 'ყდის ფოტო' : 'Cover photo'}
+                    </span>
+                    <CoverImagePicker
                       value={currentBook?.coverImage || ''}
-                      onChange={(e) => {
+                      onChange={(url) => {
                         if (currentBook) {
-                          setCurrentBook({ ...currentBook, coverImage: e.target.value });
+                          setCurrentBook({ ...currentBook, coverImage: url });
                         }
                       }}
-                      className="w-full px-3.5 py-2.5 text-xs bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-stone-900"
+                      presets={COVER_PRESETS}
                     />
                   </div>
                 </div>

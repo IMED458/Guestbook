@@ -92,3 +92,85 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------------------------------------------------------------
+   Printed album
+   --------------------------------------------------------------- */
+
+@media print {
+  /* A4 with a generous inner margin; the album supplies its own padding. */
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Keep the photographs — browsers drop backgrounds and images otherwise. */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* The album is portalled directly into <body>, so hiding every other
+     top-level element removes the navbar, the footer, the cookie banner and
+     the toolbar in one rule. */
+  body > *:not(.album-root) {
+    display: none !important;
+  }
+
+  .album-root {
+    position: static !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  .print-album {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* The cover gets a page of its own; later sections flow naturally. */
+  .album-page {
+    min-height: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .print-album > .album-page:first-child {
+    break-after: page;
+    page-break-after: always;
+    min-height: calc(297mm - 28mm) !important;
+  }
+
+  .album-page-break {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  /* An entry or a photo plate should never be sliced across two sheets. */
+  .album-entry {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  img {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+}
