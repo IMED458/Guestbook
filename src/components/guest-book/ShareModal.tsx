@@ -87,17 +87,17 @@ export const ShareModal: React.FC<ShareModalProps> = ({
         aria-modal="true"
         aria-labelledby="share-modal-title"
         id="share-modal-card"
-        className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden relative"
+        className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden relative flex flex-col max-h-[92dvh]"
       >
         <button
           onClick={onClose}
           aria-label={lang === 'ka' ? 'ფანჯრის დახურვა' : 'Close this dialog'}
-          className="absolute top-4 right-4 p-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-full transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
+          className="absolute top-3 right-3 z-10 w-11 h-11 flex items-center justify-center text-stone-600 hover:text-stone-900 bg-white/90 hover:bg-stone-100 rounded-full transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
         >
           <X className="w-5 h-5" aria-hidden="true" />
         </button>
 
-        <div className="p-6 text-center">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-center">
           <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 flex items-center justify-center mx-auto mb-3">
             <Share2 className="w-6 h-6" aria-hidden="true" />
           </div>

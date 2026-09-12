@@ -35,16 +35,17 @@ export const Navbar: React.FC<NavbarProps> = ({
         <button
           id="nav-brand-button"
           onClick={onGoHome}
-          className="flex items-center gap-2.5 group text-left cursor-pointer focus:outline-none shrink-0"
+          className="flex items-center gap-2 sm:gap-2.5 group text-left cursor-pointer focus:outline-none min-w-0"
         >
-          <div className="w-10 h-10 rounded-xl bg-stone-900 text-amber-100 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl bg-stone-900 text-amber-100 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
             <BookOpen className="w-5 h-5 text-amber-300" aria-hidden="true" />
           </div>
-          <div>
-            <span className="font-serif font-bold text-lg tracking-tight text-stone-900 block leading-tight">
+          <div className="min-w-0">
+            <span className="hidden min-[360px]:block font-serif font-bold text-base sm:text-lg tracking-tight text-stone-900 leading-tight whitespace-nowrap">
               Memoria
             </span>
-            <span className="text-[11px] uppercase tracking-wider text-stone-600 block">
+            {/* The tagline is the first thing to go when the bar gets tight. */}
+            <span className="hidden sm:block text-[11px] uppercase tracking-wider text-stone-600 truncate">
               {lang === 'ka' ? 'სტუმრების წიგნი' : 'Digital Guest Book'}
             </span>
           </div>
@@ -84,7 +85,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </nav>
 
         {/* Right Action buttons */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {/* Language Switcher */}
           <LanguageSwitcher />
 
@@ -128,14 +129,14 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 id="nav-login-btn"
                 onClick={() => onOpenAuth('login')}
-                className="px-2.5 sm:px-3.5 py-1.5 text-xs sm:text-sm font-medium text-stone-700 hover:text-stone-900 transition-colors cursor-pointer"
+                className="hidden min-[360px]:inline-flex px-2 sm:px-3.5 py-1.5 text-xs sm:text-sm font-medium text-stone-700 whitespace-nowrap hover:text-stone-900 transition-colors cursor-pointer"
               >
                 {t('nav', 'login')}
               </button>
               <button
                 id="nav-get-started-btn"
                 onClick={() => onOpenAuth('register')}
-                className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-stone-900 hover:bg-stone-800 rounded-lg shadow-sm transition-all hover:shadow cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white whitespace-nowrap bg-stone-900 hover:bg-stone-800 rounded-lg shadow-sm transition-all hover:shadow cursor-pointer"
               >
                 <span>{t('nav', 'getStarted')}</span>
               </button>

@@ -21,10 +21,14 @@ export function useModalA11y(isOpen: boolean, onClose: () => void) {
 
     previouslyFocused.current = document.activeElement as HTMLElement | null;
 
+    // Prefer the dialog itself when it is focusable (tabindex="-1"): the
+    // screen reader announces the dialog without a control lighting up with a
+    // focus ring, and on a phone no keyboard pops open uninvited.
     const node = ref.current;
-    const first = node?.querySelector<HTMLElement>(FOCUSABLE);
+    const target =
+      node?.hasAttribute('tabindex') ? node : node?.querySelector<HTMLElement>(FOCUSABLE);
     // Defer so the element exists and any entrance animation has started.
-    const focusTimer = window.setTimeout(() => first?.focus(), 0);
+    const focusTimer = window.setTimeout(() => target?.focus(), 0);
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -53,13 +57,30 @@ export function useModalA11y(isOpen: boolean, onClose: () => void) {
     };
 
     document.addEventListener('keydown', onKeyDown);
-    const previousOverflow = document.body.style.overflow;
+
+    // `overflow: hidden` alone does not stop the page behind the dialog from
+    // scrolling on iOS Safari, so the body is pinned in place and the scroll
+    // offset restored on close.
+    const scrollY = window.scrollY;
+    const previous = {
+      overflow: document.body.style.overflow,
+      position: document.body.style.position,
+      top: document.body.style.top,
+      width: document.body.style.width,
+    };
     document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
 
     return () => {
       window.clearTimeout(focusTimer);
       document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = previousOverflow;
+      document.body.style.overflow = previous.overflow;
+      document.body.style.position = previous.position;
+      document.body.style.top = previous.top;
+      document.body.style.width = previous.width;
+      window.scrollTo(0, scrollY);
       previouslyFocused.current?.focus?.();
     };
   }, [isOpen, onClose]);

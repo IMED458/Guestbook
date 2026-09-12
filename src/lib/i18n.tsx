@@ -186,6 +186,29 @@ export const translations = {
       awaitingApproval: 'ელოდება მასპინძლის დამტკიცებას',
       adminManage: 'პანელში მართვა',
       welcomeFromHosts: 'მასპინძლების მისალმება',
+      // საჯარო გვერდისა და მილოცვის ფორმის ეტიკეტები
+      leaveMessage: 'მილოცვის დატოვება',
+      writeNote: 'დაწერეთ მილოცვა',
+      publishMessage: 'მილოცვის გამოქვეყნება',
+      shareQr: 'გაზიარება',
+      shareGuestbook: 'სტუმრების წიგნის გაზიარება',
+      scanQrHint: 'მოიწვიეთ სტუმრები ბმულით ან QR კოდის დასკანერებით',
+      scanWithPhone: 'დაასკანერეთ მობილურის კამერით',
+      downloadQr: 'QR კოდის ჩამოტვირთვა',
+      copy: 'კოპირება',
+      copied: 'დაკოპირდა!',
+      memoryWall: 'მოგონებების კედელი',
+      hostedBy: 'მასპინძლები:',
+      adminView: 'მართვის პანელი',
+      emptyTitle: 'ჯერ მილოცვები არ არის',
+      emptySubtitle: 'იყავით პირველი, ვინც დატოვებს თბილ სურვილს და გააზიარებს მოგონებას!',
+      clickToExpand: 'დააჭირეთ გასადიდებლად',
+      watchVideo: 'ვიდეოს ნახვა',
+      yourName: 'თქვენი სახელი',
+      relationship: 'კავშირი მასპინძლებთან',
+      email: 'ელფოსტა',
+      message: 'თქვენი მილოცვა',
+      attachPhoto: 'ფოტოს მიმაგრება',
     },
     // მილოცვის მოდალი / Leave Message Modal
     leaveMessage: {
@@ -323,9 +346,20 @@ export const translations = {
       nameLabel: 'თქვენი სახელი / მასპინძლები',
       signInBtn: 'შესვლა',
       signUpBtn: 'რეგისტრაცია',
-      noAccount: 'არ გაქვთ ანგარიში? დარეგისტრირდით',
-      haveAccount: 'უკვე გაქვთ ანგარიში? შედით',
+      noAccount: 'არ გაქვთ ანგარიში?',
+      haveAccount: 'უკვე გაქვთ ანგარიში?',
       submitting: 'მიმდინარეობს...',
+      loading: 'მიმდინარეობს...',
+      loginSubtitle: 'შედით სისტემაში წიგნებისა და მოგონებების სამართავად',
+      registerSubtitle: 'დაიწყეთ მოგონებების შენახვა თქვენი დღესასწაულისთვის',
+      demoLogin: 'დემო ანგარიშით შესვლა (ერთი დაწკაპებით)',
+      orCredentials: 'ან შედით ელფოსტით',
+      fullName: 'თქვენი სახელი / მასპინძლები',
+      email: 'ელფოსტის მისამართი',
+      password: 'პაროლი (მინიმუმ 6 სიმბოლო)',
+      signIn: 'შესვლა',
+      createOne: 'დარეგისტრირდით',
+      signInHere: 'შედით სისტემაში',
     },
     // ბეჭდვა / Print
     print: {
@@ -464,6 +498,29 @@ export const translations = {
       awaitingApproval: 'Awaiting host approval',
       adminManage: 'Manage in Dashboard',
       welcomeFromHosts: 'Welcome from the Hosts',
+      // Public page & guest message form labels
+      leaveMessage: 'Leave a Message',
+      writeNote: 'Write a Note',
+      publishMessage: 'Publish My Message',
+      shareQr: 'Share',
+      shareGuestbook: 'Share Guest Book',
+      scanQrHint: 'Invite guests with the link or by scanning the QR code',
+      scanWithPhone: 'Scan with your phone camera',
+      downloadQr: 'Download QR Code',
+      copy: 'Copy',
+      copied: 'Copied!',
+      memoryWall: 'Memory Wall',
+      hostedBy: 'Hosted by',
+      adminView: 'Dashboard',
+      emptyTitle: 'No messages yet',
+      emptySubtitle: 'Be the first to leave a warm wish and share a memory!',
+      clickToExpand: 'Tap to expand',
+      watchVideo: 'Watch video',
+      yourName: 'Your Name',
+      relationship: 'Relationship to Hosts',
+      email: 'Email',
+      message: 'Your Message',
+      attachPhoto: 'Attach Photo',
     },
     // Leave Message Modal
     leaveMessage: {
@@ -601,9 +658,20 @@ export const translations = {
       nameLabel: 'Your Name / Host Names',
       signInBtn: 'Log In',
       signUpBtn: 'Create Account',
-      noAccount: "Don't have an account? Sign up",
-      haveAccount: 'Already have an account? Log in',
+      noAccount: "Don't have an account?",
+      haveAccount: 'Already have an account?',
       submitting: 'Please wait...',
+      loading: 'Please wait...',
+      loginSubtitle: 'Sign in to manage your guest books & memories',
+      registerSubtitle: 'Start preserving memories for your special celebration',
+      demoLogin: 'Instant Demo Login (One Click)',
+      orCredentials: 'or use your email',
+      fullName: 'Your Name / Host Names',
+      email: 'Email Address',
+      password: 'Password (min. 6 characters)',
+      signIn: 'Log In',
+      createOne: 'Create one',
+      signInHere: 'Log in here',
     },
     // Print
     print: {
@@ -792,9 +860,11 @@ export const LanguageSwitcher: React.FC<{ className?: string }> = ({ className =
         aria-pressed={lang === 'ka'}
         lang="ka"
         title="ქართული ენა"
+        aria-label="ქართული ენა"
       >
         <span aria-hidden="true">🇬🇪</span>
-        <span>ქართ</span>
+        {/* Flags alone on the narrowest phones; the label needs the room. */}
+        <span className="hidden sm:inline">ქართ</span>
       </button>
       <button
         type="button"
@@ -808,9 +878,10 @@ export const LanguageSwitcher: React.FC<{ className?: string }> = ({ className =
         aria-pressed={lang === 'en'}
         lang="en"
         title="English"
+        aria-label="English"
       >
         <span aria-hidden="true">🇬🇧</span>
-        <span>EN</span>
+        <span className="hidden sm:inline">EN</span>
       </button>
     </div>
   );

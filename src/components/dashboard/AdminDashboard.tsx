@@ -1553,7 +1553,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         type="text"
                         value={settingsPassword}
                         onChange={(e) => setSettingsPassword(e.target.value)}
-                        placeholder="e.g. celebration2026"
+                        placeholder={lang === 'ka' ? 'მაგ. celebration2026' : 'e.g. celebration2026'}
                         className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl text-xs focus:outline-none focus:border-stone-900"
                       />
                     </div>

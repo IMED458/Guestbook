@@ -15,11 +15,11 @@ import {
 } from 'lucide-react';
 import { api } from '../../lib/api.ts';
 import { publicGuestBookUrl } from '../../lib/urls.ts';
-import { GuestBook, GuestMessage, FontStyle } from '../../types.ts';
+import { GuestBook, GuestMessage, FontStyle, ThemeSettings } from '../../types.ts';
 import { LeaveMessageModal } from './LeaveMessageModal.tsx';
 import { ShareModal } from './ShareModal.tsx';
 import { ImageLightbox } from './ImageLightbox.tsx';
-import { getFontFamily, isDarkColor, FONT_OPTIONS } from '../../lib/theme.ts';
+import { getFontFamily, isDarkColor, FONT_OPTIONS, THEME_PRESETS } from '../../lib/theme.ts';
 import { useI18n, LanguageSwitcher } from '../../lib/i18n.tsx';
 
 interface GuestBookPublicViewProps {
@@ -169,7 +169,7 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
           <h2 className="text-2xl font-serif font-bold">
             {lang === 'ka' ? 'დაცული სტუმრების წიგნი' : 'Private Guest Book'}
           </h2>
-          <p className="text-xs text-stone-600 mt-2 mb-6">
+          <p className="text-xs text-stone-300 mt-2 mb-6">
             {lang === 'ka'
               ? 'ეს წიგნი დახურულია. გთხოვთ შეიყვანოთ მოწვევაში მითითებული პაროლი გასაგრძელებლად.'
               : 'This celebration is private. Please enter the password provided on your invitation to continue.'}
@@ -188,7 +188,7 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
               value={enteredPassword}
               onChange={(e) => setEnteredPassword(e.target.value)}
               placeholder={lang === 'ka' ? 'შეიყვანეთ პაროლი...' : 'Enter password...'}
-              className="w-full px-4 py-3 bg-stone-800 border border-stone-700 rounded-xl text-sm text-white placeholder-stone-500 focus:outline-none focus:border-amber-400"
+              className="w-full px-4 py-3 bg-stone-800 border border-stone-700 rounded-xl text-base sm:text-sm text-white placeholder-stone-500 focus:outline-none focus:border-amber-400"
             />
 
             <button
@@ -215,7 +215,9 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
 
   if (!guestBook) return null;
 
-  const theme = guestBook.theme;
+  // A book saved before a theme field existed would otherwise paint white
+  // text on a white button, so the classic preset fills any gap.
+  const theme: ThemeSettings = { ...THEME_PRESETS.classic.settings, ...(guestBook.theme || {}) };
   const isDark = isDarkColor(theme.bgColor);
   const effectiveFontStyle = previewFont || theme.fontStyle || 'serif';
   const fontFamily = getFontFamily(effectiveFontStyle);
@@ -261,7 +263,7 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
       }}
     >
       {/* Top Floating Control Bar */}
-      <div className="sticky top-0 z-30 w-full backdrop-blur-md border-b px-4 py-3 flex items-center justify-between transition-colors duration-300"
+      <div className="sticky top-0 z-30 w-full backdrop-blur-md border-b px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 transition-colors duration-300"
         style={{
           borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
           backgroundColor: isDark ? 'rgba(10, 10, 12, 0.75)' : 'rgba(255, 255, 255, 0.75)'
@@ -269,7 +271,7 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
       >
         <button
           onClick={onBackToHome}
-          className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+          className={`shrink-0 flex items-center gap-1.5 text-xs font-semibold px-2.5 sm:px-3 py-2 rounded-lg transition-colors cursor-pointer ${
             isDark ? 'text-stone-300 hover:text-white hover:bg-white/10' : 'text-stone-700 hover:text-stone-900 hover:bg-stone-100'
           }`}
         >
@@ -277,17 +279,18 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
           <span className="hidden sm:inline">{t('common', 'back')}</span>
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
           <LanguageSwitcher />
 
           {isOwner && onOpenDashboard && (
             <button
               onClick={onOpenDashboard}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
+              aria-label={t('guestbook', 'adminView')}
+              className={`shrink-0 text-xs font-semibold px-2.5 sm:px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
                 isDark ? 'bg-stone-800 text-stone-200 hover:bg-stone-700' : 'bg-stone-100 text-stone-800 hover:bg-stone-200'
               }`}
             >
-              <Shield className="w-3.5 h-3.5" />
+              <Shield className="w-4 h-4" />
               <span className="hidden sm:inline">{t('guestbook', 'adminView')}</span>
             </button>
           )}
@@ -295,24 +298,25 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
           <button
             id="public-share-top-btn"
             onClick={() => setIsShareModalOpen(true)}
-            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${
+            aria-label={t('guestbook', 'shareQr')}
+            className={`shrink-0 flex items-center gap-1.5 text-xs font-semibold px-2.5 sm:px-3 py-2 rounded-lg border transition-colors cursor-pointer ${
               isDark
                 ? 'border-stone-800 text-stone-300 hover:bg-stone-800'
                 : 'border-stone-200 bg-white text-stone-700 hover:bg-stone-50'
             }`}
           >
-            <Share2 className="w-3.5 h-3.5" />
-            <span>{t('guestbook', 'shareQr')}</span>
+            <Share2 className="w-4 h-4" />
+            <span className="hidden sm:inline">{t('guestbook', 'shareQr')}</span>
           </button>
 
           <button
             id="public-leave-message-top-btn"
             onClick={() => setIsMessageModalOpen(true)}
-            className={`flex items-center gap-1.5 text-xs font-semibold px-4 py-1.5 text-white transition-all shadow-sm cursor-pointer ${getButtonClasses()}`}
+            className={`shrink-0 flex items-center gap-1.5 text-xs font-semibold px-3 sm:px-4 py-2 text-white transition-all shadow-sm cursor-pointer ${getButtonClasses()}`}
             style={{ backgroundColor: theme.primaryColor }}
           >
-            <Heart className="w-3.5 h-3.5 fill-current" />
-            <span>{t('guestbook', 'leaveMessage')}</span>
+            <Heart className="w-4 h-4 fill-current" />
+            <span className="truncate max-w-[7.5rem] sm:max-w-none">{t('guestbook', 'leaveMessage')}</span>
           </button>
         </div>
       </div>

@@ -26,14 +26,14 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({ url, guestName, on
     >
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 p-3 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors cursor-pointer"
+        className="absolute top-4 right-4 z-10 w-12 h-12 flex items-center justify-center text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors cursor-pointer"
         aria-label={lang === 'ka' ? 'ფოტოს დახურვა' : 'Close image preview'}
       >
         <X className="w-6 h-6" aria-hidden="true" />
       </button>
 
       <div
-        className="max-w-4xl max-h-[85vh] flex flex-col items-center justify-center"
+        className="max-w-4xl max-h-[85dvh] flex flex-col items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >
         <img
@@ -45,7 +45,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({ url, guestName, on
                   : `Photo uploaded by ${guestName}`)
               : (lang === 'ka' ? 'სტუმრების წიგნში ატვირთული ფოტო' : 'Photo uploaded to the guest book')
           }
-          className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl"
+          className="max-w-full max-h-[75dvh] object-contain rounded-lg shadow-2xl"
         />
         {guestName && (
           <p className="mt-3 text-sm text-stone-300 font-medium tracking-wide">
