@@ -90,19 +90,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         aria-modal="true"
         aria-labelledby="auth-modal-title"
         id="auth-modal-card"
-        className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden relative"
+        className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden relative flex flex-col max-h-[92dvh]"
       >
         {/* Close button */}
         <button
           id="auth-close-btn"
           onClick={onClose}
           aria-label={lang === 'ka' ? 'ფანჯრის დახურვა' : 'Close this dialog'}
-          className="absolute top-4 right-4 p-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-full transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
+          className="absolute top-3 right-3 z-10 w-11 h-11 flex items-center justify-center text-stone-600 hover:text-stone-900 bg-white/90 hover:bg-stone-100 rounded-full transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
         >
           <X className="w-5 h-5" aria-hidden="true" />
         </button>
 
-        <div className="p-6 sm:p-8">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-6 sm:p-8 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           {/* Header */}
           <div className="text-center mb-6">
             <h2 id="auth-modal-title" className="text-2xl font-serif font-bold text-stone-900">
@@ -162,7 +162,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder={lang === 'ka' ? 'მაგ. გიორგი ბერიძე' : 'e.g. David Miller'}
-                    className="w-full pl-9 pr-3.5 py-2.5 text-sm bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-900 transition-all"
+                    className="w-full pl-9 pr-3.5 py-2.5 text-base sm:text-sm bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-900 transition-all"
                   />
                 </div>
               </div>
@@ -182,7 +182,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@guestbook.com"
-                  className="w-full pl-9 pr-3.5 py-2.5 text-sm bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-900 transition-all"
+                  className="w-full pl-9 pr-3.5 py-2.5 text-base sm:text-sm bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-900 transition-all"
                 />
               </div>
             </div>
@@ -201,7 +201,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-9 pr-3.5 py-2.5 text-sm bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-900 transition-all"
+                  className="w-full pl-9 pr-3.5 py-2.5 text-base sm:text-sm bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-900 transition-all"
                 />
               </div>
             </div>

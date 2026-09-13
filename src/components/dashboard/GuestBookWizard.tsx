@@ -202,7 +202,7 @@ export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
         aria-modal="true"
         aria-labelledby="wizard-title"
         id="guestbook-wizard-container"
-        className="w-full max-w-2xl max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden relative flex flex-col"
+        className="w-full max-w-2xl max-h-[92dvh] bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden relative flex flex-col"
       >
         {/* Header with Progress Bar — stays visible while the body scrolls */}
         <div className="shrink-0 p-6 sm:p-8 pb-4 border-b border-stone-100 flex items-center justify-between">
@@ -217,7 +217,7 @@ export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
           <button
             onClick={onClose}
             aria-label={lang === 'ka' ? 'ფანჯრის დახურვა' : 'Close this dialog'}
-            className="p-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-full transition-colors cursor-pointer"
+            className="shrink-0 -mr-1 w-11 h-11 flex items-center justify-center text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-full transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" aria-hidden="true" />
           </button>
@@ -241,7 +241,7 @@ export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
         )}
 
         {/* Step Content — the only scrolling region */}
-        <div ref={bodyRef} className="flex-1 min-h-0 overflow-y-auto p-6 sm:p-8">
+        <div ref={bodyRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-6 sm:p-8">
           {/* STEP 1: EVENT TYPE */}
           {step === 1 && (
             <div>
