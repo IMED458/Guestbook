@@ -16,6 +16,12 @@ export function useModalA11y(isOpen: boolean, onClose: () => void) {
   const ref = useRef<HTMLDivElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
 
+  // Callers pass an inline arrow function, so a re-render would otherwise tear
+  // the lock down and set it up again — re-reading the scroll offset as 0,
+  // because the body is pinned at that moment, and losing the visitor's place.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -33,7 +39,7 @@ export function useModalA11y(isOpen: boolean, onClose: () => void) {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -83,7 +89,7 @@ export function useModalA11y(isOpen: boolean, onClose: () => void) {
       window.scrollTo(0, scrollY);
       previouslyFocused.current?.focus?.();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   return { ref };
 }

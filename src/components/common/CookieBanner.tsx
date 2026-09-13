@@ -86,9 +86,10 @@ export const CookieBanner: React.FC<CookieBannerProps> = ({
       aria-modal="false"
       aria-labelledby="cookie-banner-title"
       aria-describedby="cookie-banner-desc"
-      className="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4"
+      className="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
     >
-      <div className="mx-auto max-w-3xl rounded-2xl bg-white border border-stone-300 shadow-2xl p-5 sm:p-6">
+      {/* Capped so the notice never swallows a small phone screen. */}
+      <div className="mx-auto max-w-3xl max-h-[70dvh] overflow-y-auto overscroll-contain rounded-2xl bg-white border border-stone-300 shadow-2xl p-5 sm:p-6">
         <div className="flex items-start gap-3">
           <span className="shrink-0 w-9 h-9 rounded-xl bg-stone-100 border border-stone-200 flex items-center justify-center">
             <Cookie className="w-4.5 h-4.5 text-stone-700" aria-hidden="true" />

@@ -79,10 +79,17 @@ export default function App() {
     } else {
       window.location.hash = '#/';
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0 });
   };
 
   useEffect(() => {
+    // A reload or a tab restore would otherwise drop the visitor back at the
+    // old scroll offset, where the sticky header covers the top of the page.
+    // Every route here renders its own document, so each one starts at the top.
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+
     // Restore the Firebase session, if there is one.
     api.auth
       .me()
@@ -90,9 +97,17 @@ export default function App() {
       .catch(() => setCurrentUser(null));
 
     updateRouteFromUrl();
+    window.scrollTo({ top: 0 });
 
-    window.addEventListener('hashchange', updateRouteFromUrl);
-    return () => window.removeEventListener('hashchange', updateRouteFromUrl);
+    // Back and forward move between views without going through navigateTo,
+    // so the reset belongs on the hash change itself.
+    const onHashChange = () => {
+      updateRouteFromUrl();
+      window.scrollTo({ top: 0 });
+    };
+
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
   const openAuth = (mode: 'login' | 'register' = 'login') => {

@@ -50,6 +50,12 @@
 }
 
 
+/* The header sticks to the top, so anchor jumps stop below it rather than
+   underneath it. */
+html {
+  scroll-padding-top: 5rem;
+}
+
 /* ---------------------------------------------------------------
    Dialog entrance
    --------------------------------------------------------------- */
