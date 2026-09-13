@@ -189,7 +189,7 @@ export const translations = {
       // საჯარო გვერდისა და მილოცვის ფორმის ეტიკეტები
       leaveMessage: 'მილოცვის დატოვება',
       writeNote: 'დაწერეთ მილოცვა',
-      publishMessage: 'მილოცვის გამოქვეყნება',
+      publishMessage: 'გამოქვეყნება',
       shareQr: 'გაზიარება',
       shareGuestbook: 'სტუმრების წიგნის გაზიარება',
       scanQrHint: 'მოიწვიეთ სტუმრები ბმულით ან QR კოდის დასკანერებით',
@@ -501,7 +501,7 @@ export const translations = {
       // Public page & guest message form labels
       leaveMessage: 'Leave a Message',
       writeNote: 'Write a Note',
-      publishMessage: 'Publish My Message',
+      publishMessage: 'Publish Message',
       shareQr: 'Share',
       shareGuestbook: 'Share Guest Book',
       scanQrHint: 'Invite guests with the link or by scanning the QR code',

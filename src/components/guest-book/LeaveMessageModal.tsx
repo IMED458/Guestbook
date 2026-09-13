@@ -15,6 +15,7 @@ import { MAX_IMAGE_BYTES, MAX_VIDEO_BYTES, type UploadedMedia } from '../../lib/
 import { GuestMessage } from '../../types.ts';
 import { useI18n } from '../../lib/i18n.tsx';
 import { useModalA11y } from '../../lib/useModalA11y.ts';
+import { useVisualViewport } from '../../lib/useVisualViewport.ts';
 
 interface LeaveMessageModalProps {
   isOpen: boolean;
@@ -55,6 +56,7 @@ export const LeaveMessageModal: React.FC<LeaveMessageModalProps> = ({
   const videoInputRef = useRef<HTMLInputElement>(null);
 
   const { ref: dialogRef } = useModalA11y(isOpen, onClose);
+  const viewport = useVisualViewport(isOpen);
 
   if (!isOpen) return null;
 
@@ -202,12 +204,22 @@ export const LeaveMessageModal: React.FC<LeaveMessageModalProps> = ({
   const fieldClasses =
     'w-full px-3.5 py-3 text-base sm:text-sm bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-900 transition-all';
 
+  // Follow the visible viewport rather than the layout viewport: when the
+  // keyboard opens on iOS the sheet shrinks to the space above it instead of
+  // sliding its header, and its close button, off the top of the screen.
+  const viewportStyle: React.CSSProperties = viewport
+    ? { height: `${viewport.height}px`, transform: `translateY(${viewport.offsetTop}px)` }
+    : {};
+
   return (
     // The sheet fills the screen on a phone and floats as a card from `sm` up.
-    // `dvh` keeps it inside the visible area while the mobile browser bars
-    // slide in and out, and `overscroll-contain` stops a scroll that reaches
-    // the end of the sheet from dragging the page behind it.
-    <div className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center sm:p-4 bg-stone-900/60 backdrop-blur-sm animate-fadeIn">
+    // `dvh` is the fallback where visualViewport is missing; `overscroll-contain`
+    // stops a scroll that reaches the end of the sheet from dragging the page
+    // behind it.
+    <div
+      className="fixed inset-x-0 top-0 h-[100dvh] z-50 flex items-stretch sm:items-center justify-center sm:p-4 bg-stone-900/60 backdrop-blur-sm animate-fadeIn"
+      style={viewportStyle}
+    >
       <div
         ref={dialogRef}
         role="dialog"
@@ -215,7 +227,7 @@ export const LeaveMessageModal: React.FC<LeaveMessageModalProps> = ({
         aria-labelledby="leave-message-title"
         id="leave-message-card"
         tabIndex={-1}
-        className="w-full sm:max-w-lg bg-white sm:rounded-2xl shadow-2xl sm:border sm:border-stone-200 relative flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90dvh]"
+        className="w-full sm:max-w-lg bg-white sm:rounded-2xl shadow-2xl sm:border sm:border-stone-200 relative flex flex-col h-full sm:h-auto sm:max-h-full"
       >
         {/* Header stays pinned so the close button is always reachable, no
             matter how far the guest has scrolled down the form. */}
@@ -548,24 +560,34 @@ export const LeaveMessageModal: React.FC<LeaveMessageModalProps> = ({
             {/* Submit bar — pinned to the bottom of the sheet, clear of the
                 iPhone home indicator. */}
             <div className="shrink-0 border-t border-stone-100 bg-white px-5 sm:px-8 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:rounded-b-2xl">
-              <button
-                id="submit-message-btn"
-                type="submit"
-                disabled={loading || isUploading}
-                className="w-full min-h-12 py-3 px-6 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-                    <span>{lang === 'ka' ? 'მოგონება ინახება...' : 'Saving your memory...'}</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" aria-hidden="true" />
-                    <span>{t('guestbook', 'publishMessage')}</span>
-                  </>
-                )}
-              </button>
+              <div className="flex items-center gap-2.5">
+                <button
+                  id="cancel-message-btn"
+                type="button"
+                  onClick={resetForm}
+                  className="shrink-0 min-h-12 py-3 px-5 rounded-xl border border-stone-300 bg-white text-stone-800 text-sm font-semibold hover:bg-stone-100 transition-colors cursor-pointer"
+                >
+                  {lang === 'ka' ? 'გაუქმება' : 'Cancel'}
+                </button>
+                <button
+                  id="submit-message-btn"
+                  type="submit"
+                  disabled={loading || isUploading}
+                  className="flex-1 min-h-12 py-3 px-4 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                      <span>{lang === 'ka' ? 'ინახება...' : 'Saving...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" aria-hidden="true" />
+                      <span className="min-w-0 truncate">{t('guestbook', 'publishMessage')}</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </form>
         )}

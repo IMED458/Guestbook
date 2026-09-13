@@ -4,6 +4,7 @@ import { api } from '../../lib/api.ts';
 import { User } from '../../types.ts';
 import { useI18n, LanguageSwitcher } from '../../lib/i18n.tsx';
 import { useModalA11y } from '../../lib/useModalA11y.ts';
+import { useVisualViewport } from '../../lib/useVisualViewport.ts';
 import type { LegalSlug } from '../../content/legal.ts';
 
 interface AuthModalProps {
@@ -31,6 +32,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   const { ref: dialogRef } = useModalA11y(isOpen, onClose);
+  const viewport = useVisualViewport(isOpen);
 
   if (!isOpen) return null;
 
@@ -82,15 +84,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
+  // Sized to what the visitor can see, so the on-screen keyboard never covers
+  // the dialog or pushes its close button off the top of the screen.
+  const viewportStyle: React.CSSProperties = viewport
+    ? { height: `${viewport.height}px`, transform: `translateY(${viewport.offsetTop}px)` }
+    : {};
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-fadeIn">
+    <div
+      className="fixed inset-x-0 top-0 h-[100dvh] z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-fadeIn"
+      style={viewportStyle}
+    >
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="auth-modal-title"
         id="auth-modal-card"
-        className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden relative flex flex-col max-h-[92dvh]"
+        className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden relative flex flex-col max-h-full"
       >
         {/* Close button */}
         <button

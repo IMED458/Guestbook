@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../lib/api.ts';
 import { useModalA11y } from '../../lib/useModalA11y.ts';
+import { useVisualViewport } from '../../lib/useVisualViewport.ts';
 import { EventType, ThemePreset, GuestBook, FontStyle } from '../../types.ts';
 import { THEME_PRESETS, FONT_OPTIONS, getFontFamily } from '../../lib/theme.ts';
 import { useI18n } from '../../lib/i18n.tsx';
@@ -114,6 +115,7 @@ export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
   const [password, setPassword] = useState('');
 
   const { ref: dialogRef } = useModalA11y(isOpen, onClose);
+  const viewport = useVisualViewport(isOpen);
   const bodyRef = useRef<HTMLDivElement>(null);
 
   // Each step starts at the top of its own scroll region, so the heading of
@@ -194,15 +196,22 @@ export const GuestBookWizard: React.FC<GuestBookWizardProps> = ({
     setStep((prev) => Math.max(1, prev - 1));
   };
 
+  const viewportStyle: React.CSSProperties = viewport
+    ? { height: `${viewport.height}px`, transform: `translateY(${viewport.offsetTop}px)` }
+    : {};
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/70 backdrop-blur-sm animate-fadeIn">
+    <div
+      className="fixed inset-x-0 top-0 h-[100dvh] z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/70 backdrop-blur-sm animate-fadeIn"
+      style={viewportStyle}
+    >
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="wizard-title"
         id="guestbook-wizard-container"
-        className="w-full max-w-2xl max-h-[92dvh] bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden relative flex flex-col"
+        className="w-full max-w-2xl max-h-full bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden relative flex flex-col"
       >
         {/* Header with Progress Bar — stays visible while the body scrolls */}
         <div className="shrink-0 p-6 sm:p-8 pb-4 border-b border-stone-100 flex items-center justify-between">
