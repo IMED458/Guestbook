@@ -1,0 +1,45 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "guestbook-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "observability": {
+    "enabled": true
+  },
+
+  // Public, non-secret configuration. Secrets go in with `wrangler secret put`
+  // and never appear in a file Git can see.
+  "vars": {
+    "FIREBASE_PROJECT_ID": "guestbook-40634",
+    "R2_BUCKET_NAME": "guestbook-media",
+    "AUTH_EMAIL_DOMAIN": "users.guestbook.local",
+    // Every origin allowed to call this Worker, comma separated.
+    "ALLOWED_ORIGINS": "http://localhost:3000,https://imed458.github.io"
+  },
+
+  // Bound for server-side head, read and delete. Browser uploads use presigned
+  // S3 URLs instead, so a large video never passes through the Worker.
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "guestbook-media"
+    }
+  ],
+
+  // Fixed-window counters for the public upload and request endpoints.
+  "kv_namespaces": [
+    {
+      "binding": "RATE_LIMIT",
+      "id": "REPLACE_WITH_KV_NAMESPACE_ID"
+    }
+  ]
+
+  // Required secrets — set each with `wrangler secret put <NAME>`:
+  //   FIREBASE_SERVICE_ACCOUNT   full service-account JSON, one line
+  //   R2_ACCOUNT_ID              Cloudflare account id
+  //   R2_ACCESS_KEY_ID           R2 API token access key
+  //   R2_SECRET_ACCESS_KEY       R2 API token secret
+  //   TURNSTILE_SECRET_KEY       Turnstile secret (optional)
+}

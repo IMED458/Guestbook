@@ -1,0 +1,9 @@
+# Local-only secrets for `wrangler dev`. Copy to `.dev.vars`, which is ignored
+# by Git. These are the same names the deployed Worker gets from
+# `wrangler secret put`.
+
+FIREBASE_SERVICE_ACCOUNT='{"type":"service_account","project_id":"...","private_key":"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n","client_email":"..."}'
+R2_ACCOUNT_ID=""
+R2_ACCESS_KEY_ID=""
+R2_SECRET_ACCESS_KEY=""
+TURNSTILE_SECRET_KEY=""

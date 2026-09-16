@@ -11,3 +11,6 @@ coverage/
 *service-account*.json
 *serviceAccount*.json
 .wrangler/
+
+.dev.vars
+.wrangler/
