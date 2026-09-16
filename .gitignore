@@ -6,3 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Never let a service-account key near the repository.
+*service-account*.json
+*serviceAccount*.json
+.wrangler/

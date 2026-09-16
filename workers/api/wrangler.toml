@@ -1,0 +1,31 @@
+name = "guestbook-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Public, non-secret configuration. Secrets go in via `wrangler secret put`
+# and never appear in this file.
+[vars]
+FIREBASE_PROJECT_ID = "guestbook-40634"
+R2_BUCKET_NAME = "guestbook-media"
+AUTH_EMAIL_DOMAIN = "users.guestbook.local"
+# Comma-separated list of origins allowed to call this Worker.
+ALLOWED_ORIGINS = "http://localhost:3000,https://imed458.github.io"
+
+# Bound for server-side reads, deletes and HEAD checks. Browser uploads use
+# presigned S3 URLs instead, so large files never pass through the Worker.
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "guestbook-media"
+
+# Rate limiting for the public upload and request endpoints.
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# Required secrets (set with `wrangler secret put <NAME>`):
+#   FIREBASE_SERVICE_ACCOUNT   full service-account JSON, one line
+#   R2_ACCOUNT_ID              Cloudflare account id
+#   R2_ACCESS_KEY_ID           R2 API token access key
+#   R2_SECRET_ACCESS_KEY       R2 API token secret
+#   TURNSTILE_SECRET_KEY       Cloudflare Turnstile secret (optional)

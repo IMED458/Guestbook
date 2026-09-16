@@ -1,4 +1,6 @@
 {
+  "include": ["src", "scripts"],
+  "exclude": ["workers", "node_modules", "dist"],
   "compilerOptions": {
     "target": "ES2022",
     "experimentalDecorators": true,

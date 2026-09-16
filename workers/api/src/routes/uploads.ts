@@ -1,0 +1,252 @@
+import { Hono } from 'hono';
+import type { Env } from '../env.ts';
+import { HttpError, getDocument, writeDocument } from '../google.ts';
+import {
+  abortSchema,
+  classifyMedia,
+  completeSchema,
+  signPartSchema,
+  uploadRequestSchema,
+} from '../media-rules.ts';
+import {
+  abortMultipartUpload,
+  albumObjectKey,
+  completeMultipartUpload,
+  createMultipartUpload,
+  guestbookObjectKey,
+  presignPut,
+  presignUploadPart,
+} from '../r2.ts';
+import { clientAddress, enforceRateLimit, verifyTurnstile } from '../rate-limit.ts';
+
+/** Anything larger than this is uploaded in parts so a dropout is recoverable. */
+const MULTIPART_THRESHOLD = 16 * 1024 * 1024;
+
+interface AlbumDoc {
+  clientId: string;
+  eventId: string;
+  limits?: {
+    uploadEnabled?: boolean;
+    allowImages?: boolean;
+    allowVideos?: boolean;
+    maxFileSize?: number;
+    storageQuota?: number;
+    expiresAt?: string | null;
+  };
+  stats?: { totalBytes?: number };
+  archivedAt?: string | null;
+}
+
+interface GuestbookDoc {
+  clientId: string;
+  eventId: string;
+}
+
+/**
+ * Decide whether this file may be uploaded to this destination, and return the
+ * object key it is allowed to occupy. The browser never chooses its own key —
+ * that is what would let one album write into another.
+ */
+async function authorizeUpload(
+  env: Env,
+  input: {
+    albumId?: string;
+    guestbookId?: string;
+    filename: string;
+    contentType: string;
+    fileSize: number;
+  }
+): Promise<{ objectKey: string; kind: 'IMAGE' | 'VIDEO'; normalizedMime: string; clientId: string; eventId: string }> {
+  const media = classifyMedia(input.contentType, input.filename);
+  if (!media) {
+    throw new HttpError(400, 'this file type is not accepted');
+  }
+
+  if (input.albumId) {
+    const album = await getDocument<AlbumDoc>(env, `albums/${input.albumId}`);
+    if (!album) throw new HttpError(404, 'album not found');
+
+    const limits = album.limits || {};
+    if (album.archivedAt) throw new HttpError(403, 'this album is archived');
+    if (limits.uploadEnabled === false) throw new HttpError(403, 'uploads are closed for this album');
+    if (limits.expiresAt && new Date(limits.expiresAt).getTime() < Date.now()) {
+      throw new HttpError(403, 'the upload window for this album has ended');
+    }
+    if (media.kind === 'IMAGE' && limits.allowImages === false) {
+      throw new HttpError(403, 'photos are not accepted in this album');
+    }
+    if (media.kind === 'VIDEO' && limits.allowVideos === false) {
+      throw new HttpError(403, 'videos are not accepted in this album');
+    }
+    if (limits.maxFileSize && input.fileSize > limits.maxFileSize) {
+      throw new HttpError(413, 'this file is larger than the album allows');
+    }
+    if (
+      limits.storageQuota &&
+      (album.stats?.totalBytes || 0) + input.fileSize > limits.storageQuota
+    ) {
+      throw new HttpError(413, 'this album has reached its storage limit');
+    }
+
+    return {
+      objectKey: albumObjectKey({
+        clientId: album.clientId,
+        eventId: album.eventId,
+        albumId: input.albumId,
+        filename: input.filename,
+      }),
+      kind: media.kind,
+      normalizedMime: media.normalizedMime,
+      clientId: album.clientId,
+      eventId: album.eventId,
+    };
+  }
+
+  if (input.guestbookId) {
+    const book = await getDocument<GuestbookDoc>(env, `guestbooks/${input.guestbookId}`);
+    if (!book) throw new HttpError(404, 'guest book not found');
+
+    return {
+      objectKey: guestbookObjectKey({
+        clientId: book.clientId || 'legacy',
+        eventId: book.eventId || 'legacy',
+        guestbookId: input.guestbookId,
+        filename: input.filename,
+      }),
+      kind: media.kind,
+      normalizedMime: media.normalizedMime,
+      clientId: book.clientId || 'legacy',
+      eventId: book.eventId || 'legacy',
+    };
+  }
+
+  throw new HttpError(400, 'an album or a guest book must be named');
+}
+
+/**
+ * The key handed back on sign-part and complete has to be one this Worker
+ * issued for this destination, or a caller could complete an upload into
+ * someone else's prefix.
+ */
+function assertKeyBelongsTo(objectKey: string, destination: { albumId?: string; guestbookId?: string }): void {
+  const expected = destination.albumId
+    ? `/albums/${destination.albumId}/originals/`
+    : destination.guestbookId
+      ? `/guestbooks/${destination.guestbookId}/originals/`
+      : null;
+
+  if (!expected || !objectKey.includes(expected) || objectKey.includes('..')) {
+    throw new HttpError(403, 'that object key does not belong to this destination');
+  }
+}
+
+export const uploadRoutes = new Hono<{ Bindings: Env }>();
+
+/** Start an upload: small files get one presigned PUT, large ones get a multipart session. */
+uploadRoutes.post('/create', async (c) => {
+  const ip = clientAddress(c.req.raw);
+  await enforceRateLimit(c.env, `upload:${ip}`, 300, 3600);
+
+  const input = uploadRequestSchema.parse(await c.req.json());
+  await verifyTurnstile(c.env, input.turnstileToken, ip);
+
+  const target = await authorizeUpload(c.env, input);
+
+  if (input.fileSize <= MULTIPART_THRESHOLD) {
+    return c.json({
+      mode: 'single' as const,
+      objectKey: target.objectKey,
+      uploadUrl: await presignPut(c.env, target.objectKey, target.normalizedMime),
+      kind: target.kind,
+    });
+  }
+
+  const uploadId = await createMultipartUpload(c.env, target.objectKey, target.normalizedMime);
+  return c.json({
+    mode: 'multipart' as const,
+    objectKey: target.objectKey,
+    uploadId,
+    kind: target.kind,
+    partSize: 8 * 1024 * 1024,
+  });
+});
+
+uploadRoutes.post('/multipart/sign-part', async (c) => {
+  const input = signPartSchema.parse(await c.req.json());
+  assertKeyBelongsTo(input.objectKey, input);
+
+  return c.json({
+    url: await presignUploadPart(c.env, input.objectKey, input.uploadId, input.partNumber),
+  });
+});
+
+/** Finish the upload and only then write the metadata row. */
+uploadRoutes.post('/multipart/complete', async (c) => {
+  const input = completeSchema.parse(await c.req.json());
+  assertKeyBelongsTo(input.objectKey, input);
+
+  const target = await authorizeUpload(c.env, input);
+  await completeMultipartUpload(c.env, input.objectKey, input.uploadId, input.parts);
+
+  const mediaId = crypto.randomUUID().replace(/-/g, '').slice(0, 20);
+  await writeDocument(c.env, `albumMedia/${mediaId}`, {
+    albumId: input.albumId || null,
+    guestbookId: input.guestbookId || null,
+    clientId: target.clientId,
+    eventId: target.eventId,
+    kind: target.kind,
+    storageProvider: 'r2',
+    objectKey: input.objectKey,
+    originalName: input.filename,
+    mimeType: target.normalizedMime,
+    fileSize: input.fileSize,
+    width: input.width ?? null,
+    height: input.height ?? null,
+    durationSeconds: input.durationSeconds ?? null,
+    uploaderName: input.uploaderName || null,
+    status: 'READY',
+    uploadedAt: new Date().toISOString(),
+  });
+
+  return c.json({ mediaId, objectKey: input.objectKey });
+});
+
+uploadRoutes.post('/multipart/abort', async (c) => {
+  const input = abortSchema.parse(await c.req.json());
+  await abortMultipartUpload(c.env, input.objectKey, input.uploadId);
+  return c.json({ ok: true });
+});
+
+/** A single-part upload reports itself here so the metadata row is written. */
+uploadRoutes.post('/finalize', async (c) => {
+  const input = completeSchema.omit({ uploadId: true, parts: true }).parse(await c.req.json());
+  assertKeyBelongsTo(input.objectKey, input);
+
+  const target = await authorizeUpload(c.env, input);
+
+  const head = await c.env.MEDIA.head(input.objectKey);
+  if (!head) throw new HttpError(409, 'the file did not arrive in storage');
+
+  const mediaId = crypto.randomUUID().replace(/-/g, '').slice(0, 20);
+  await writeDocument(c.env, `albumMedia/${mediaId}`, {
+    albumId: input.albumId || null,
+    guestbookId: input.guestbookId || null,
+    clientId: target.clientId,
+    eventId: target.eventId,
+    kind: target.kind,
+    storageProvider: 'r2',
+    objectKey: input.objectKey,
+    originalName: input.filename,
+    mimeType: target.normalizedMime,
+    // Trust storage over the browser for the byte count.
+    fileSize: head.size,
+    width: input.width ?? null,
+    height: input.height ?? null,
+    durationSeconds: input.durationSeconds ?? null,
+    uploaderName: input.uploaderName || null,
+    status: 'READY',
+    uploadedAt: new Date().toISOString(),
+  });
+
+  return c.json({ mediaId, objectKey: input.objectKey, fileSize: head.size });
+});

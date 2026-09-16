@@ -1,89 +1,292 @@
 rules_version = '2';
 
-// Digital Guest Book — Firestore security rules.
+// ---------------------------------------------------------------------------
+// Guestbook CRM — Firestore security rules
 //
-// Model:
-//   guestbooks/{bookId}                       public to read, owner to write
-//   guestbooks/{bookId}/reactors/{visitorId}  a visitor's own emoji reactions
-//   messages/{messageId}                      approved ones public, owner sees all
-//   messageEmails/{messageId}                 private guest emails, owner-only
+// Three audiences, enforced here rather than in the UI:
+//   SUPER_ADMIN  everything
+//   STAFF        gated by fine-grained permissions carried in custom claims
+//   CLIENT       strictly their own clientId, and nothing else
+//   guest        public guest book and album surfaces only, no account
+//
+// Role, clientId and the permission list arrive as Firebase custom claims,
+// which only the Worker (holding the service account) can set. A browser
+// cannot forge them. The permission indices match PERMISSION_INDEX in
+// workers/api/src/auth.ts and PERMISSIONS in src/domain/roles.ts — that list
+// is append-only; reordering it would silently re-map every grant.
+// ---------------------------------------------------------------------------
+
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    /* ---------------- identity helpers ---------------- */
 
     function signedIn() {
       return request.auth != null;
     }
 
-    function isOwner(ownerId) {
-      return signedIn() && request.auth.uid == ownerId;
+    function claims() {
+      return request.auth.token;
     }
+
+    function role() {
+      return signedIn() && 'role' in claims() ? claims().role : '';
+    }
+
+    function isSuperAdmin() {
+      return role() == 'SUPER_ADMIN';
+    }
+
+    function isStaff() {
+      return role() == 'STAFF';
+    }
+
+    function isBackOffice() {
+      return isSuperAdmin() || isStaff();
+    }
+
+    function isClient() {
+      return role() == 'CLIENT';
+    }
+
+    function myClientId() {
+      return signedIn() && 'clientId' in claims() ? claims().clientId : '';
+    }
+
+    function ownsClient(clientId) {
+      return isClient() && myClientId() != '' && myClientId() == clientId;
+    }
+
+    // Staff permissions travel as indices to stay inside the 1000-byte claim cap.
+    function can(index) {
+      return isSuperAdmin() ||
+             (isStaff() && 'perms' in claims() && index in claims().perms);
+    }
+
+    function ORDERS_VIEW()      { return 0;  }
+    function ORDERS_CREATE()    { return 1;  }
+    function ORDERS_EDIT()      { return 2;  }
+    function ORDERS_DELETE()    { return 3;  }
+    function CLIENTS_VIEW()     { return 4;  }
+    function CLIENTS_CREATE()   { return 5;  }
+    function CLIENTS_EDIT()     { return 6;  }
+    function CLIENTS_DELETE()   { return 7;  }
+    function EVENTS_VIEW()      { return 8;  }
+    function EVENTS_MANAGE()    { return 9;  }
+    function GUESTBOOKS_VIEW()  { return 10; }
+    function GUESTBOOKS_MANAGE(){ return 11; }
+    function ALBUMS_VIEW()      { return 12; }
+    function ALBUMS_MANAGE()    { return 13; }
+    function MEDIA_DELETE()     { return 14; }
+    function PAYMENTS_VIEW()    { return 15; }
+    function PAYMENTS_EDIT()    { return 16; }
+    function CATALOG_VIEW()     { return 17; }
+    function CATALOG_MANAGE()   { return 18; }
+    function USERS_VIEW()       { return 19; }
+    function EMAILS_SEND()      { return 21; }
+    function REQUESTS_VIEW()    { return 22; }
+    function REQUESTS_MANAGE()  { return 23; }
+    function ACTIVITY_VIEW()    { return 24; }
 
     function changedKeys() {
       return request.resource.data.diff(resource.data).affectedKeys();
     }
 
-    function isString(value, maxLen) {
+    function isNonEmptyString(value, maxLen) {
       return value is string && value.size() > 0 && value.size() <= maxLen;
     }
 
-    match /guestbooks/{bookId} {
-      // Anyone with the link can open a guest book. Private books are gated by
-      // a password hash the client compares — never by hiding the document.
+    /* ---------------- users and username claims ---------------- */
+
+    match /users/{uid} {
+      // Everyone may read their own profile — that is how the app learns its
+      // own role and entitlements after signing in.
+      allow read: if signedIn() && (request.auth.uid == uid || isBackOffice());
+      allow list: if can(USERS_VIEW());
+
+      // Creating, deleting and re-roling a user all run through the Worker,
+      // which holds the service account. Nothing here may write them.
+      allow create, delete: if false;
+
+      // A person may update presentational fields on their own profile only.
+      allow update: if signedIn() && request.auth.uid == uid
+                    && changedKeys().hasOnly(['firstName', 'lastName', 'phone', 'contactEmail', 'updatedAt']);
+    }
+
+    match /usernames/{username} {
+      // Readable so the sign-in screen can turn a username into an auth
+      // identity before anyone is authenticated. It holds no secret.
       allow read: if true;
+      allow write: if false;
+    }
 
-      allow create: if isOwner(request.resource.data.ownerId)
-                    && isString(request.resource.data.title, 200)
-                    && isString(request.resource.data.slug, 120);
+    /* ---------------- clients ---------------- */
 
-      // Owners may edit anything except who owns the book.
-      allow update: if isOwner(resource.data.ownerId)
-                    && request.resource.data.ownerId == resource.data.ownerId;
+    match /clients/{clientId} {
+      allow get: if can(CLIENTS_VIEW()) || ownsClient(clientId);
+      allow list: if can(CLIENTS_VIEW());
+      allow create: if can(CLIENTS_CREATE());
+      allow update: if can(CLIENTS_EDIT());
+      allow delete: if can(CLIENTS_DELETE());
+    }
 
-      // Visitors may only bump the view counters, nothing else.
+    /* ---------------- events ---------------- */
+
+    match /events/{eventId} {
+      // Public read: the combined QR landing page resolves an event by slug
+      // before anyone signs in. Events carry no sensitive field.
+      allow get, list: if true;
+      allow create, update: if can(EVENTS_MANAGE());
+      allow delete: if can(EVENTS_MANAGE());
+    }
+
+    /* ---------------- guest books ---------------- */
+
+    match /guestbooks/{bookId} {
+      allow get, list: if true;
+
+      allow create: if can(GUESTBOOKS_MANAGE());
+      allow update: if can(GUESTBOOKS_MANAGE()) || ownsClient(resource.data.clientId);
+      // A visitor may only bump the view counters.
       allow update: if changedKeys().hasOnly(['viewsByDay', 'viewsTotal']);
+      allow delete: if can(GUESTBOOKS_MANAGE());
 
-      allow delete: if isOwner(resource.data.ownerId);
-
-      // A visitor's own reaction ledger, keyed by their local visitor id.
       match /reactors/{visitorId} {
         allow read, write: if true;
       }
     }
 
     match /messages/{messageId} {
+      // A list query must constrain itself to satisfy one of these branches:
+      // the public wall filters on status, the back office on clientId.
       allow read: if resource.data.status == 'APPROVED'
-                  || isOwner(resource.data.ownerId);
+                  || can(GUESTBOOKS_VIEW())
+                  || ownsClient(resource.data.clientId);
 
-      // Guests sign the book without an account. The status must match the
-      // book's moderation setting, so nobody can publish past moderation.
-      allow create: if isString(request.resource.data.name, 120)
-                    && isString(request.resource.data.message, 5000)
+      // Guests sign the book with no account. Status has to match the book's
+      // moderation setting, so nothing can publish past moderation.
+      allow create: if isNonEmptyString(request.resource.data.name, 120)
+                    && isNonEmptyString(request.resource.data.message, 5000)
                     && request.resource.data.guestBookId is string
                     && request.resource.data.status in ['APPROVED', 'PENDING']
                     && exists(/databases/$(database)/documents/guestbooks/$(request.resource.data.guestBookId))
-                    && request.resource.data.ownerId ==
-                       get(/databases/$(database)/documents/guestbooks/$(request.resource.data.guestBookId)).data.ownerId
                     && request.resource.data.status ==
                        (get(/databases/$(database)/documents/guestbooks/$(request.resource.data.guestBookId)).data.isModerated
                           ? 'PENDING' : 'APPROVED')
                     && request.resource.data.media.size() <= 5;
 
-      // Hosts moderate; visitors may only toggle reaction counts.
-      allow update: if isOwner(resource.data.ownerId)
-                    && request.resource.data.ownerId == resource.data.ownerId;
+      allow update: if can(GUESTBOOKS_MANAGE()) || ownsClient(resource.data.clientId);
+      // Reaction counts are the one thing a visitor may change.
       allow update: if changedKeys().hasOnly(['reactions']);
-
-      allow delete: if isOwner(resource.data.ownerId);
+      allow delete: if can(GUESTBOOKS_MANAGE()) || ownsClient(resource.data.clientId);
     }
 
     match /messageEmails/{messageId} {
-      // Write-only for guests, readable only by the host of that guest book.
-      allow read, delete: if isOwner(resource.data.ownerId);
+      // A guest's address is write-only for the public and readable only by
+      // the back office or the client who owns that guest book.
+      allow read, delete: if can(GUESTBOOKS_VIEW()) || ownsClient(resource.data.clientId);
       allow create: if request.resource.data.email is string
-                    && request.resource.data.email.size() <= 200
-                    && request.resource.data.ownerId ==
-                       get(/databases/$(database)/documents/guestbooks/$(request.resource.data.guestBookId)).data.ownerId;
+                    && request.resource.data.email.size() <= 200;
       allow update: if false;
+    }
+
+    /* ---------------- albums ---------------- */
+
+    match /albums/{albumId} {
+      // A guest opening an album by QR needs its title and upload rules.
+      allow get, list: if true;
+      allow create: if can(ALBUMS_MANAGE());
+      allow update: if can(ALBUMS_MANAGE()) || ownsClient(resource.data.clientId);
+      allow delete: if can(ALBUMS_MANAGE());
+    }
+
+    match /albumMedia/{mediaId} {
+      allow read: if can(ALBUMS_VIEW())
+                  || ownsClient(resource.data.clientId)
+                  || resource.data.status == 'READY';
+
+      // Rows are written by the Worker once the bytes are actually in R2.
+      // A browser cannot claim an upload happened.
+      allow create: if false;
+      allow update: if can(ALBUMS_MANAGE()) || ownsClient(resource.data.clientId);
+      allow delete: if can(MEDIA_DELETE());
+    }
+
+    /* ---------------- orders and money ---------------- */
+
+    match /orders/{orderId} {
+      allow get: if can(ORDERS_VIEW()) || ownsClient(resource.data.clientId);
+      allow list: if can(ORDERS_VIEW()) || isClient();
+      allow create: if can(ORDERS_CREATE());
+      allow update: if can(ORDERS_EDIT());
+      allow delete: if can(ORDERS_DELETE());
+    }
+
+    match /payments/{paymentId} {
+      allow get: if can(PAYMENTS_VIEW()) || ownsClient(resource.data.clientId);
+      allow list: if can(PAYMENTS_VIEW()) || isClient();
+      allow create, update: if can(PAYMENTS_EDIT());
+      // Money records are corrected, not erased; only the owner of the system
+      // may remove one.
+      allow delete: if isSuperAdmin();
+    }
+
+    /* ---------------- catalogue ---------------- */
+
+    match /catalogCategories/{categoryId} {
+      allow read: if signedIn();
+      allow write: if can(CATALOG_MANAGE());
+    }
+
+    match /catalogItems/{itemId} {
+      allow read: if signedIn();
+      allow write: if can(CATALOG_MANAGE());
+    }
+
+    /* ---------------- inbound requests from the public site ---------------- */
+
+    match /orderRequests/{requestId} {
+      allow read: if can(REQUESTS_VIEW());
+      // Anyone may ask for a quote; the shape is constrained so the form
+      // cannot be used as free storage.
+      allow create: if isNonEmptyString(request.resource.data.name, 120)
+                    && isNonEmptyString(request.resource.data.phone, 40)
+                    && request.resource.data.status == 'NEW'
+                    && (!('comment' in request.resource.data)
+                        || request.resource.data.comment.size() <= 2000);
+      allow update: if can(REQUESTS_MANAGE());
+      allow delete: if can(REQUESTS_MANAGE());
+    }
+
+    /* ---------------- communication and audit ---------------- */
+
+    match /emailLogs/{logId} {
+      allow read: if can(EMAILS_SEND()) || can(ACTIVITY_VIEW());
+      allow create: if can(EMAILS_SEND());
+      // A sent-mail record is evidence; it is never edited or removed.
+      allow update, delete: if false;
+    }
+
+    match /activityLogs/{logId} {
+      allow read: if can(ACTIVITY_VIEW());
+      // Written by the Worker, or by the client app for its own actions.
+      allow create: if isBackOffice()
+                    && request.resource.data.actorUserId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    /* ---------------- settings ---------------- */
+
+    match /settings/{docId} {
+      // Branding is read by every signed-in surface; only an owner edits it.
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    /* ---------------- default deny ---------------- */
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

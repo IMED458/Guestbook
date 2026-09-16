@@ -2,6 +2,7 @@ import React from 'react';
 import { BookOpen, Sparkles, User as UserIcon, LogOut, LayoutDashboard, PlusCircle } from 'lucide-react';
 import { User } from '../../types.ts';
 import { useI18n, LanguageSwitcher } from '../../lib/i18n.tsx';
+import { demoEnabled } from '../../lib/api.ts';
 
 interface NavbarProps {
   currentUser: User | null;
@@ -119,13 +120,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           ) : (
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <button
+              {demoEnabled && <button
                 id="nav-demo-login-btn"
                 onClick={onOpenDemo}
                 className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200/70 rounded-lg transition-colors cursor-pointer"
               >
                 <span>{t('nav', 'demoAdmin')}</span>
-              </button>
+              </button>}
               <button
                 id="nav-login-btn"
                 onClick={() => onOpenAuth('login')}

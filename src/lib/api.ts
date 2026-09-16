@@ -239,6 +239,15 @@ async function uniqueSlug(title: string, excludeId?: string): Promise<string> {
 /* Demo content                                                        */
 /* ------------------------------------------------------------------ */
 
+/**
+ * The demo account exists so the landing page has something to show. A
+ * predictable administrator on a real deployment is a back door, so it only
+ * works when VITE_ENABLE_DEMO is explicitly turned on — the production build
+ * ships without it, and the real owner is created by
+ * `npm run create-super-admin`.
+ */
+export const demoEnabled = import.meta.env.VITE_ENABLE_DEMO === 'true';
+
 const DEMO_EMAIL = 'admin@guestbook.com';
 const DEMO_PASSWORD = 'password123';
 const DEMO_SLUG = 'wedding-nika-ana';
@@ -394,6 +403,10 @@ export const api = {
     },
 
     async demoLogin(): Promise<{ token: string; user: User }> {
+      if (!demoEnabled) {
+        throw new Error('დემო რეჟიმი გამორთულია');
+      }
+
       let cred;
       try {
         cred = await signInWithEmailAndPassword(auth, DEMO_EMAIL, DEMO_PASSWORD);

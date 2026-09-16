@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Lock, Mail, User as UserIcon, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
-import { api } from '../../lib/api.ts';
+import { api, demoEnabled } from '../../lib/api.ts';
 import { User } from '../../types.ts';
 import { useI18n, LanguageSwitcher } from '../../lib/i18n.tsx';
 import { useModalA11y } from '../../lib/useModalA11y.ts';
@@ -116,7 +116,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
 
           {/* Instant Demo Login Button */}
-          <div className="mb-5">
+          {demoEnabled && <div className="mb-5">
             <button
               id="auth-demo-instant-btn"
               type="button"
@@ -127,7 +127,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <Sparkles className="w-4 h-4 text-amber-700" aria-hidden="true" />
               <span>{t('auth', 'demoLogin')}</span>
             </button>
-          </div>
+          </div>}
 
           <div className="relative flex py-2 items-center mb-4">
             <div className="flex-grow border-t border-stone-200"></div>
@@ -181,7 +181,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@guestbook.com"
+                  placeholder="you@example.com"
                   className="w-full pl-9 pr-3.5 py-2.5 text-base sm:text-sm bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-900 transition-all"
                 />
               </div>
