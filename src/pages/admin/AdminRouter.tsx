@@ -6,6 +6,7 @@ import { AdminLayout } from './AdminLayout.tsx';
 import { DashboardPage } from './DashboardPage.tsx';
 import { ClientsPage } from './ClientsPage.tsx';
 import { CatalogPage } from './CatalogPage.tsx';
+import { UsersPage } from './UsersPage.tsx';
 
 /**
  * Chooses the back-office page for the current hash, after checking that the
@@ -65,6 +66,9 @@ export const AdminRouter: React.FC = () => {
       case 'admin/catalog':
         page = <CatalogPage />;
         break;
+      case 'admin/users':
+        page = <UsersPage />;
+        break;
       default:
         page = <ComingSoon path={path} isSuperAdmin={isSuperAdmin} />;
     }
@@ -100,9 +104,7 @@ const ComingSoon: React.FC<{ path: string; isSuperAdmin: boolean }> = ({ path })
           განყოფილება მაშინ ემატება, როცა რეალურად მუშაობს — ცრუ ღილაკები არ იდგმება.
         </p>
         <p className="mt-3 text-[13px] text-stone-600 leading-relaxed">
-          უკვე მუშაობს: <strong className="font-semibold text-stone-800">მთავარი</strong>,{' '}
-          <strong className="font-semibold text-stone-800">კლიენტები</strong>,{' '}
-          <strong className="font-semibold text-stone-800">პროდუქტები და სერვისები</strong>.
+          უკვე მუშაობს: მთავარი, კლიენტები, მომხმარებლები, პროდუქტები და სერვისები.
         </p>
       </div>
     </div>
