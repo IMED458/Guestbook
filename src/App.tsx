@@ -5,6 +5,10 @@ import { GuestBookPublicView } from './components/guest-book/GuestBookPublicView
 import { AdminDashboard } from './components/dashboard/AdminDashboard.tsx';
 import { GuestBookWizard } from './components/dashboard/GuestBookWizard.tsx';
 import { AuthModal } from './components/auth/AuthModal.tsx';
+import { LoginPage } from './pages/auth/LoginPage.tsx';
+import { AdminRouter } from './pages/admin/AdminRouter.tsx';
+
+
 import { LegalPage } from './components/legal/LegalPage.tsx';
 import { SiteFooter } from './components/layout/SiteFooter.tsx';
 import { CookieBanner } from './components/common/CookieBanner.tsx';
@@ -13,7 +17,7 @@ import { useI18n } from './lib/i18n.tsx';
 import { legalDocs, type LegalSlug } from './content/legal.ts';
 import { User, GuestBook } from './types.ts';
 
-type AppView = 'landing' | 'public' | 'dashboard' | 'legal';
+type AppView = 'landing' | 'public' | 'dashboard' | 'legal' | 'login' | 'admin';
 
 const isLegalSlug = (value: string): value is LegalSlug =>
   Object.prototype.hasOwnProperty.call(legalDocs, value);
@@ -35,6 +39,19 @@ export default function App() {
   // GitHub Pages serves — no rewrite rules, no 404 on refresh or direct link.
   const updateRouteFromUrl = () => {
     const hash = window.location.hash.replace(/^#\/?/, '');
+
+    // The new back office. Everything below this point is the original
+    // guest-book app, which keeps working untouched while the CRM is built
+    // out beside it.
+    if (hash === 'login') {
+      setCurrentView('login');
+      return;
+    }
+
+    if (hash === 'admin' || hash.startsWith('admin/')) {
+      setCurrentView('admin');
+      return;
+    }
 
     if (hash.startsWith('g/')) {
       const slug = hash.slice(2).split(/[/?]/)[0];
@@ -142,6 +159,14 @@ export default function App() {
     setInitialBookIdForDashboard(newBook.id);
     navigateTo('dashboard');
   };
+
+  if (currentView === 'login') {
+    return <LoginPage />;
+  }
+
+  if (currentView === 'admin') {
+    return <AdminRouter />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-stone-50 text-stone-900 font-sans selection:bg-rose-100 selection:text-rose-900">

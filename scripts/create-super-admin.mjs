@@ -45,28 +45,70 @@ if (!/^[a-z][a-z0-9._-]{2,31}$/.test(username)) {
   fail('--username must start with a letter and use only a-z, 0-9, dot, dash or underscore (3-32 chars)');
 }
 
-/** Read a password without leaving it in argv, the process list or history. */
-async function promptPassword(label) {
-  const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true });
+/**
+ * Read a password without it reaching argv, the process list or the shell
+ * history. Raw mode is used rather than readline's own echo, because letting
+ * readline print the character and then redrawing over it races with the
+ * terminal and garbles the line.
+ */
+function promptPassword(label) {
+  return new Promise((resolve, reject) => {
+    const { stdin, stdout } = process;
 
-  const answer = await new Promise((resolve) => {
-    const onData = (char) => {
-      // Stop masking once the line is submitted.
-      if (['\n', '\r', '\u0004'].includes(String(char))) {
-        process.stdin.removeListener('data', onData);
-        return;
-      }
-      process.stdout.write('\u001b[2K\u001b[200D' + label + '•'.repeat(rl.line.length));
+    if (!stdin.isTTY) {
+      // Piped or run by CI: say what to do rather than throwing a stack trace.
+      fail(
+        'პაროლის ინტერაქტიულად კითხვა ტერმინალს საჭიროებს.\n' +
+        '    გაუშვით ტერმინალიდან, ან გადაეცით --password (გაითვალისწინეთ,\n' +
+        '    რომ მაშინ პაროლი shell-ის ისტორიაში დარჩება).'
+      );
+      reject(new Error('no tty'));
+      return;
+    }
+
+    stdout.write(label);
+    stdin.setRawMode(true);
+    stdin.resume();
+    stdin.setEncoding('utf8');
+
+    let value = '';
+
+    const finish = () => {
+      stdin.setRawMode(false);
+      stdin.pause();
+      stdin.removeListener('data', onData);
+      stdout.write('\n');
     };
-    process.stdin.on('data', onData);
-    rl.question(label, (value) => {
-      process.stdout.write('\n');
-      rl.close();
-      resolve(value);
-    });
-  });
 
-  return answer;
+    const onData = (chunk) => {
+      // A paste arrives as one chunk, so walk it a character at a time.
+      for (const char of chunk) {
+        if (char === '\r' || char === '\n' || char === '\u0004') {
+          finish();
+          resolve(value);
+          return;
+        }
+        if (char === '\u0003') {
+          finish();
+          process.exit(130);
+        }
+        if (char === '\u007f' || char === '\b') {
+          if (value.length > 0) {
+            value = value.slice(0, -1);
+            stdout.write('\b \b');
+          }
+          continue;
+        }
+        // Ignore escape sequences from arrow keys and the like.
+        if (char < ' ') continue;
+
+        value += char;
+        stdout.write('•');
+      }
+    };
+
+    stdin.on('data', onData);
+  });
 }
 
 const password = values.password || (await promptPassword('პაროლი: '));
