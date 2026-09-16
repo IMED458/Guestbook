@@ -5,35 +5,46 @@ const FOCUSABLE =
 
 /**
  * Makes a dialog usable without a mouse: Escape closes it, Tab cycles inside
- * it instead of escaping to the page behind, focus lands on the first control
- * when it opens, and returns to whatever opened it when it closes. Also locks
- * background scrolling while open.
+ * it instead of escaping to the page behind, focus lands somewhere sensible
+ * when it opens, and returns to whatever opened it when it closes. Background
+ * scrolling is locked while it is open.
  *
- * Spread the returned `dialogProps` onto the dialog element and attach `ref`
- * to it.
+ * The callback is held in a ref rather than listed as a dependency. Callers
+ * pass an inline arrow — `onClose={() => setOpen(false)}` — which is a new
+ * function on every render, so depending on it would tear down and re-run this
+ * effect on every keystroke, yanking focus back to the top of the dialog after
+ * each character typed.
  */
 export function useModalA11y(isOpen: boolean, onClose: () => void) {
   const ref = useRef<HTMLDivElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+
+  // Keep the latest callback without making it a dependency.
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     if (!isOpen) return;
 
     previouslyFocused.current = document.activeElement as HTMLElement | null;
 
-    // Prefer the dialog itself when it is focusable (tabindex="-1"): the
-    // screen reader announces the dialog without a control lighting up with a
-    // focus ring, and on a phone no keyboard pops open uninvited.
     const node = ref.current;
-    const target =
-      node?.hasAttribute('tabindex') ? node : node?.querySelector<HTMLElement>(FOCUSABLE);
+    // Prefer the dialog itself when it is focusable: a screen reader announces
+    // it without a control lighting up, and on a phone no keyboard opens
+    // uninvited.
+    const target = node?.hasAttribute('tabindex')
+      ? node
+      : node?.querySelector<HTMLElement>(FOCUSABLE);
+
     // Defer so the element exists and any entrance animation has started.
     const focusTimer = window.setTimeout(() => target?.focus(), 0);
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -44,46 +55,30 @@ export function useModalA11y(isOpen: boolean, onClose: () => void) {
       ).filter((el) => el.offsetParent !== null);
       if (focusable.length === 0) return;
 
-      const firstEl = focusable[0];
-      const lastEl = focusable[focusable.length - 1];
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
 
-      if (e.shiftKey && document.activeElement === firstEl) {
+      if (e.shiftKey && document.activeElement === first) {
         e.preventDefault();
-        lastEl.focus();
-      } else if (!e.shiftKey && document.activeElement === lastEl) {
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
         e.preventDefault();
-        firstEl.focus();
+        first.focus();
       }
     };
 
     document.addEventListener('keydown', onKeyDown);
-
-    // `overflow: hidden` alone does not stop the page behind the dialog from
-    // scrolling on iOS Safari, so the body is pinned in place and the scroll
-    // offset restored on close.
-    const scrollY = window.scrollY;
-    const previous = {
-      overflow: document.body.style.overflow,
-      position: document.body.style.position,
-      top: document.body.style.top,
-      width: document.body.style.width,
-    };
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = '100%';
 
     return () => {
       window.clearTimeout(focusTimer);
       document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = previous.overflow;
-      document.body.style.position = previous.position;
-      document.body.style.top = previous.top;
-      document.body.style.width = previous.width;
-      window.scrollTo(0, scrollY);
+      document.body.style.overflow = previousOverflow;
       previouslyFocused.current?.focus?.();
     };
-  }, [isOpen, onClose]);
+    // Deliberately only `isOpen`: see the note above about the callback.
+  }, [isOpen]);
 
   return { ref };
 }

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, CalendarPlus, FileText, Mail, Plus, Trash2 } from 'lucide-react';
 import type { Order, Payment, PaymentMethod } from '../../domain/models.ts';
 import { PAYMENT_METHODS, ORDER_STATUSES } from '../../domain/models.ts';
 import {
@@ -12,6 +12,15 @@ import {
 import { formatGel, parseLariInput } from '../../domain/money.ts';
 import { formatDateShort, formatDateTime, toDateInputValue } from '../../domain/dates.ts';
 import { orderService, paymentService } from '../../services/orderService.ts';
+import { clientService } from '../../services/clientService.ts';
+import { eventService } from '../../services/eventService.ts';
+import { settingsService } from '../../services/systemService.ts';
+import { openInvoice } from '../../services/invoiceService.ts';
+import { toDateInputValue as toDateValue } from '../../domain/dates.ts';
+import { EVENT_TYPE_LABELS } from '../../domain/labels.ts';
+import type { Client, EventRecord, EventType } from '../../domain/models.ts';
+import { QuickEmailModal } from '../../components/admin/QuickEmailModal.tsx';
+import { Card, CardHeader, PageHeader, Pill } from '../../components/ui/Card.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { navigate } from '../../lib/routes.ts';
 import { Field, inputClass } from '../../components/ui/Field.tsx';
@@ -39,6 +48,22 @@ export const OrderDetailsPage: React.FC<{ orderId: string }> = ({ orderId }) => 
   const [removing, setRemoving] = useState<Payment | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const [client, setClient] = useState<Client | null>(null);
+  const [events, setEvents] = useState<EventRecord[]>([]);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [emailTemplate, setEmailTemplate] = useState('order_ready');
+
+  // Creating the digital product straight from the order it was sold on.
+  const [eventOpen, setEventOpen] = useState(false);
+  const [eventForm, setEventForm] = useState({
+    title: '',
+    eventType: 'wedding' as EventType,
+    eventDate: toDateValue(new Date()),
+    hosts: '',
+    hasGuestbook: false,
+    hasAlbum: true,
+  });
+
   const load = useCallback(async () => {
     setError(null);
     try {
@@ -49,6 +74,8 @@ export const OrderDetailsPage: React.FC<{ orderId: string }> = ({ orderId }) => 
       }
       setOrder(found);
       setPayments(await paymentService.listForOrder(orderId));
+      setClient(await clientService.get(found.clientId));
+      setEvents(await eventService.listForClient(found.clientId).catch(() => []));
     } catch (err) {
       console.error('order load failed', err);
       setError('შეკვეთის ჩატვირთვა ვერ მოხერხდა');
@@ -104,6 +131,40 @@ export const OrderDetailsPage: React.FC<{ orderId: string }> = ({ orderId }) => 
     }
   };
 
+  const printInvoice = async () => {
+    if (order === null || order === 'missing' || !client) return;
+    try {
+      openInvoice({ order, client, payments, settings: await settingsService.get() });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'ინვოისი ვერ გაიხსნა');
+    }
+  };
+
+  const createEvent = async () => {
+    if (order === null || order === 'missing') return;
+    if (!eventForm.title.trim()) {
+      toast.error('ღონისძიების დასახელება სავალდებულოა');
+      return;
+    }
+    if (!eventForm.hasGuestbook && !eventForm.hasAlbum) {
+      toast.error('აირჩიეთ სტუმრების წიგნი, ალბომი, ან ორივე');
+      return;
+    }
+
+    setBusy(true);
+    try {
+      await eventService.create({ ...eventForm, clientId: order.clientId }, user?.id || '');
+      toast.success('ღონისძიება შეიქმნა — ბმულები კლიენტის გვერდზეა');
+      setEventOpen(false);
+      await load();
+    } catch (err) {
+      console.error('event from order failed', err);
+      toast.error('ღონისძიების შექმნა ვერ მოხერხდა');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (error) return <div className="p-6 lg:p-8"><ErrorState message={error} onRetry={load} /></div>;
   if (order === null) return <div className="p-6 lg:p-8"><LoadingState /></div>;
 
@@ -123,7 +184,7 @@ export const OrderDetailsPage: React.FC<{ orderId: string }> = ({ orderId }) => 
       <button
         type="button"
         onClick={() => navigate('admin/orders')}
-        className="inline-flex items-center gap-1.5 text-[13px] font-medium text-stone-700 hover:text-stone-900 cursor-pointer mb-4"
+        className="inline-flex items-center gap-1.5 text-[13px] font-medium text-stone-600 hover:text-stone-900 cursor-pointer mb-3"
       >
         <ArrowLeft className="w-4 h-4" aria-hidden="true" />
         შეკვეთები
@@ -131,22 +192,66 @@ export const OrderDetailsPage: React.FC<{ orderId: string }> = ({ orderId }) => 
 
       <header className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-stone-900 font-mono">{order.orderNumber}</h1>
+          <h1 className="font-mono text-[26px] font-bold text-stone-900">{order.orderNumber}</h1>
           <p className="mt-1 text-sm text-stone-600">
             {order.customerName}
             {order.deadline && ` · დედლაინი ${formatDateShort(order.deadline)}`}
           </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <Pill className={ORDER_STATUS_TONE[order.orderStatus]}>{ORDER_STATUS_LABELS[order.orderStatus]}</Pill>
+            <Pill className={PAYMENT_STATUS_TONE[order.paymentStatus]}>{PAYMENT_STATUS_LABELS[order.paymentStatus]}</Pill>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className={`px-2.5 py-1 rounded-full border text-[11px] font-semibold ${ORDER_STATUS_TONE[order.orderStatus]}`}>
-            {ORDER_STATUS_LABELS[order.orderStatus]}
-          </span>
-          <span className={`px-2.5 py-1 rounded-full border text-[11px] font-semibold ${PAYMENT_STATUS_TONE[order.paymentStatus]}`}>
-            {PAYMENT_STATUS_LABELS[order.paymentStatus]}
-          </span>
+          <button type="button" onClick={printInvoice} className={`${secondaryButton} inline-flex items-center gap-1.5`}>
+            <FileText className="w-3.5 h-3.5" aria-hidden="true" />
+            ინვოისი
+          </button>
+
+          {can('events.manage') && (
+            <button
+              type="button"
+              onClick={() => {
+                setEventForm((p) => ({ ...p, title: order.customerName }));
+                setEventOpen(true);
+              }}
+              className={`${secondaryButton} inline-flex items-center gap-1.5`}
+            >
+              <CalendarPlus className="w-3.5 h-3.5" aria-hidden="true" />
+              ღონისძიების შექმნა
+            </button>
+          )}
+
+          {client?.email && can('emails.send') && (
+            <button
+              type="button"
+              onClick={() => {
+                // Once something has been paid, "your order is ready" is the
+                // message that is almost always wanted next.
+                setEmailTemplate(order.paymentStatus === 'UNPAID' ? 'payment_reminder' : 'order_ready');
+                setEmailOpen(true);
+              }}
+              className={`${primaryButton} inline-flex items-center gap-1.5`}
+            >
+              <Mail className="w-3.5 h-3.5" aria-hidden="true" />
+              წერილი კლიენტს
+            </button>
+          )}
         </div>
       </header>
+
+      {order.paidAmount > 0 && events.length === 0 && can('events.manage') && (
+        <div className="mb-5 rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-4">
+          <p className="text-[13px] font-semibold text-emerald-900">
+            {order.paymentStatus === 'PAID' ? 'შეკვეთა სრულად გადახდილია' : 'ავანსი შემოსულია'}
+          </p>
+          <p className="mt-1 text-[13px] text-emerald-900 leading-relaxed">
+            თუ ამ შეკვეთაში სტუმრების წიგნი ან ციფრული ალბომია, ახლა შეგიძლიათ შექმნათ —
+            ბმულები და QR მაშინვე მზად იქნება კლიენტისთვის გასაგზავნად.
+          </p>
+        </div>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-5">
@@ -326,6 +431,85 @@ export const OrderDetailsPage: React.FC<{ orderId: string }> = ({ orderId }) => 
           </Field>
         </div>
       </Modal>
+
+      {/* Create the digital product from the order that sold it ------- */}
+      <Modal
+        isOpen={eventOpen}
+        title="ღონისძიების შექმნა ამ შეკვეთიდან"
+        onClose={() => setEventOpen(false)}
+        footer={
+          <>
+            <button type="button" className={secondaryButton} onClick={() => setEventOpen(false)} disabled={busy}>
+              გაუქმება
+            </button>
+            <button type="button" className={primaryButton} onClick={createEvent} disabled={busy}>
+              {busy ? 'იქმნება...' : 'შექმნა'}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-[13px] text-stone-700 leading-relaxed">
+            კლიენტი: <strong className="font-semibold">{order.customerName}</strong>
+          </p>
+
+          <Field id="oe-title" label="დასახელება" required>
+            {() => <input id="oe-title" value={eventForm.title} onChange={(e) => setEventForm((p) => ({ ...p, title: e.target.value }))} className={inputClass} />}
+          </Field>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field id="oe-type" label="ტიპი">
+              {() => (
+                <select id="oe-type" value={eventForm.eventType} onChange={(e) => setEventForm((p) => ({ ...p, eventType: e.target.value as EventType }))} className={inputClass}>
+                  {(Object.keys(EVENT_TYPE_LABELS) as EventType[]).map((t) => (
+                    <option key={t} value={t}>{EVENT_TYPE_LABELS[t]}</option>
+                  ))}
+                </select>
+              )}
+            </Field>
+            <Field id="oe-date" label="თარიღი">
+              {() => <input id="oe-date" type="date" value={eventForm.eventDate} onChange={(e) => setEventForm((p) => ({ ...p, eventDate: e.target.value }))} className={inputClass} />}
+            </Field>
+          </div>
+
+          <Field id="oe-hosts" label="მასპინძლები">
+            {() => <input id="oe-hosts" value={eventForm.hosts} onChange={(e) => setEventForm((p) => ({ ...p, hosts: e.target.value }))} className={inputClass} />}
+          </Field>
+
+          <fieldset className="rounded-xl border border-stone-200 p-4">
+            <legend className="px-1.5 text-[13px] font-semibold text-stone-800">რა შევქმნათ</legend>
+            <div className="space-y-2">
+              {([
+                ['hasGuestbook', 'სტუმრების წიგნი'],
+                ['hasAlbum', 'ციფრული ალბომი'],
+              ] as ['hasGuestbook' | 'hasAlbum', string][]).map(([key, label]) => (
+                <label key={key} htmlFor={`oe-${key}`} className="flex items-center gap-2.5 text-[13px] text-stone-800 cursor-pointer">
+                  <input
+                    id={`oe-${key}`}
+                    type="checkbox"
+                    checked={eventForm[key]}
+                    onChange={(e) => setEventForm((p) => ({ ...p, [key]: e.target.checked }))}
+                    className="w-4 h-4 rounded border-stone-400 text-stone-900 cursor-pointer"
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </div>
+      </Modal>
+
+      {client && (
+        <QuickEmailModal
+          isOpen={emailOpen}
+          onClose={() => setEmailOpen(false)}
+          client={client}
+          orders={[order]}
+          events={events}
+          defaultTemplateKey={emailTemplate}
+          defaultOrderId={order.id}
+        />
+      )}
 
       <ConfirmDialog
         isOpen={removing !== null}

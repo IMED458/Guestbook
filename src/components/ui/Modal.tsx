@@ -35,10 +35,10 @@ export const Modal: React.FC<ModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className={`w-full ${size === 'lg' ? 'max-w-3xl' : 'max-w-lg'} max-h-[92vh] bg-white rounded-xl shadow-2xl border border-stone-200 flex flex-col overflow-hidden`}
+        className={`w-full ${size === 'lg' ? 'max-w-3xl' : 'max-w-lg'} max-h-[92vh] bg-white rounded-2xl shadow-2xl border border-stone-200 flex flex-col overflow-hidden`}
       >
-        <div className="shrink-0 flex items-center justify-between gap-4 px-5 py-4 border-b border-stone-200">
-          <h2 id="modal-title" className="text-base font-semibold text-stone-900">
+        <div className="shrink-0 flex items-center justify-between gap-4 px-5 py-4 border-b border-stone-200 bg-stone-50/60">
+          <h2 id="modal-title" className="font-serif text-lg font-bold text-stone-900">
             {title}
           </h2>
           <button
@@ -64,13 +64,13 @@ export const Modal: React.FC<ModalProps> = ({
 };
 
 export const primaryButton =
-  'px-4 py-2 rounded-lg bg-stone-900 text-white text-[13px] font-semibold hover:bg-stone-800 ' +
+  'px-4 py-2 rounded-xl bg-stone-900 text-white text-[13px] font-semibold hover:bg-stone-800 ' +
   'transition-colors cursor-pointer disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900';
 
 export const secondaryButton =
-  'px-4 py-2 rounded-lg border border-stone-300 bg-white text-stone-800 text-[13px] font-semibold ' +
+  'px-4 py-2 rounded-xl border border-stone-300 bg-white text-stone-800 text-[13px] font-semibold ' +
   'hover:bg-stone-100 transition-colors cursor-pointer disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900';
 
 export const dangerButton =
-  'px-4 py-2 rounded-lg bg-rose-700 text-white text-[13px] font-semibold hover:bg-rose-800 ' +
+  'px-4 py-2 rounded-xl bg-rose-700 text-white text-[13px] font-semibold hover:bg-rose-800 ' +
   'transition-colors cursor-pointer disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700';

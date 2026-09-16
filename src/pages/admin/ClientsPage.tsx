@@ -10,6 +10,11 @@ import { Modal, primaryButton, secondaryButton } from '../../components/ui/Modal
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog.tsx';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/DataState.tsx';
 import { useToast } from '../../components/ui/Toast.tsx';
+import { CredentialsModal } from '../../components/admin/CredentialsModal.tsx';
+import { userService } from '../../services/userService.ts';
+import { generateTemporaryPassword, normalizeUsername, validateUsername } from '../../domain/username.ts';
+import { NO_CLIENT_ACCESS } from '../../domain/roles.ts';
+import { navigate } from '../../lib/routes.ts';
 
 const emptyForm: ClientInput = {
   displayName: '',
@@ -40,6 +45,14 @@ export const ClientsPage: React.FC = () => {
   const [archiving, setArchiving] = useState<Client | null>(null);
   const [archiveBusy, setArchiveBusy] = useState(false);
 
+  // Creating a login alongside the client is offered, never forced. A client
+  // who only ordered printed invitations has no reason to sign in; one who is
+  // getting a guest book or an album does.
+  const [withLogin, setWithLogin] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [credentials, setCredentials] = useState<{ username: string; password: string } | null>(null);
+
   const load = useCallback(async () => {
     setError(null);
     try {
@@ -66,6 +79,9 @@ export const ClientsPage: React.FC = () => {
   const openCreate = () => {
     setEditing(null);
     setForm(emptyForm);
+    setWithLogin(false);
+    setUsername('');
+    setPassword(generateTemporaryPassword());
     setFormError(null);
     setFormOpen(true);
   };
@@ -100,8 +116,39 @@ export const ClientsPage: React.FC = () => {
         await clientService.update(editing.id, form);
         toast.success('კლიენტი განახლდა');
       } else {
-        await clientService.create(form, user?.id || '');
-        toast.success('კლიენტი დაემატა');
+        const created = await clientService.create(form, user?.id || '');
+
+        if (withLogin) {
+          const normalized = normalizeUsername(username);
+          const check = validateUsername(normalized);
+          if (!check.valid) {
+            // The client is saved; only the login failed, so say exactly that.
+            setFormError('კლიენტი შეიქმნა, მაგრამ მომხმარებელი ვერ — სახელი უნდა იწყებოდეს ლათინური ასოთი (3-32 სიმბოლო)');
+            await load();
+            setSaving(false);
+            return;
+          }
+
+          await userService.create(
+            {
+              username: normalized,
+              firstName: form.firstName?.trim() || form.displayName,
+              lastName: form.lastName?.trim() || '',
+              companyName: form.companyName,
+              contactEmail: form.email,
+              phone: form.phone,
+              role: 'CLIENT',
+              permissions: [],
+              clientId: created.id,
+              access: { ...NO_CLIENT_ACCESS, orders: true, payments: true },
+              mustChangePassword: true,
+            },
+            password
+          );
+          setCredentials({ username: normalized, password });
+        }
+
+        toast.success(withLogin ? 'კლიენტი და მომხმარებელი შეიქმნა' : 'კლიენტი დაემატა');
       }
       setFormOpen(false);
       await load();
@@ -131,6 +178,13 @@ export const ClientsPage: React.FC = () => {
 
   const set = (key: keyof ClientInput) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
+
+  const suggestUsername = () => {
+    const suggestion = normalizeUsername(
+      (form.displayName || '').replace(/[^A-Za-z0-9 ]/g, '').trim().split(/\s+/).join('.')
+    );
+    if (/^[a-z]/.test(suggestion)) setUsername(suggestion.slice(0, 32));
+  };
 
   return (
     <div className="p-6 lg:p-8">
@@ -192,7 +246,11 @@ export const ClientsPage: React.FC = () => {
               </thead>
               <tbody>
                 {visible.map((client) => (
-                  <tr key={client.id} className="border-b border-stone-100 last:border-0 hover:bg-stone-50/60">
+                  <tr
+                    key={client.id}
+                    onClick={() => navigate('admin/clients/:id', { id: client.id })}
+                    className="border-b border-stone-100 last:border-0 hover:bg-stone-50/60 cursor-pointer"
+                  >
                     <td className="px-4 py-3">
                       <span className="block font-medium text-stone-900">{client.displayName}</span>
                       {client.companyName && (
@@ -215,7 +273,7 @@ export const ClientsPage: React.FC = () => {
                     <td className="px-4 py-3 text-stone-700 whitespace-nowrap">
                       {formatDateShort(client.createdAt)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
                         {can('clients.edit') && (
                           <button
@@ -310,8 +368,54 @@ export const ClientsPage: React.FC = () => {
               <textarea id="client-notes" rows={3} value={form.notes} onChange={set('notes')} aria-describedby={describedBy} className={`${inputClass} resize-none`} />
             )}
           </Field>
+
+          {!editing && can('users.manage') && (
+            <fieldset className="rounded-xl border border-stone-200 p-4">
+              <legend className="px-1.5 text-[13px] font-semibold text-stone-800">შესვლის ანგარიში</legend>
+
+              <label htmlFor="client-with-login" className="flex items-start gap-2.5 text-[13px] text-stone-800 cursor-pointer">
+                <input
+                  id="client-with-login"
+                  type="checkbox"
+                  checked={withLogin}
+                  onChange={(e) => {
+                    setWithLogin(e.target.checked);
+                    if (e.target.checked && !username) suggestUsername();
+                  }}
+                  className="mt-0.5 w-4 h-4 rounded border-stone-400 text-stone-900 cursor-pointer"
+                />
+                <span>
+                  ანგარიშიც შევქმნა
+                  <span className="block text-[11px] text-stone-600 leading-relaxed mt-0.5">
+                    არასავალდებულოა. საჭიროა მხოლოდ მაშინ, თუ კლიენტი სტუმრების წიგნს
+                    ან ციფრულ ალბომს მიიღებს — ჩვეულებრივი შეკვეთისთვის არა.
+                  </span>
+                </span>
+              </label>
+
+              {withLogin && (
+                <div className="mt-3 space-y-3">
+                  <Field id="client-username" label="მომხმარებელი" required>
+                    {() => (
+                      <input id="client-username" value={username} onChange={(e) => setUsername(e.target.value)} autoCapitalize="none" spellCheck={false} placeholder="nika.maisuradze" className={inputClass} />
+                    )}
+                  </Field>
+                  <Field id="client-password" label="დროებითი პაროლი" required hint="ერთხელ გამოჩნდება შენახვის შემდეგ.">
+                    {(d) => (
+                      <div className="flex gap-2">
+                        <input id="client-password" value={password} onChange={(e) => setPassword(e.target.value)} aria-describedby={d} className={`${inputClass} font-mono`} />
+                        <button type="button" onClick={() => setPassword(generateTemporaryPassword())} className={secondaryButton}>ახალი</button>
+                      </div>
+                    )}
+                  </Field>
+                </div>
+              )}
+            </fieldset>
+          )}
         </div>
       </Modal>
+
+      <CredentialsModal credentials={credentials} onClose={() => setCredentials(null)} />
 
       <ConfirmDialog
         isOpen={archiving !== null}

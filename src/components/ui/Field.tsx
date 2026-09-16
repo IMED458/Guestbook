@@ -50,7 +50,7 @@ export const Field: React.FC<FieldProps> = ({ id, label, hint, error, required, 
 
 /** The shared input styling, so every form in the admin looks like one system. */
 export const inputClass =
-  'w-full px-3 py-2.5 text-base sm:text-sm bg-white border border-stone-300 rounded-lg ' +
+  'w-full px-3.5 py-2.5 text-base sm:text-sm bg-white border border-stone-300 rounded-xl ' +
   'placeholder:text-stone-400 transition-colors ' +
   'focus:outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10 ' +
   'disabled:bg-stone-100 disabled:text-stone-500';

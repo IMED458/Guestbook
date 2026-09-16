@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { CheckCircle2, CloudUpload, Image as ImageIcon, Loader2, RotateCcw, Video, X } from 'lucide-react';
+import { CheckCircle2, CloudUpload, Heart, Image as ImageIcon, Images, Loader2, RotateCcw, Video, X } from 'lucide-react';
 import type { Album } from '../../domain/models.ts';
 import { albumService } from '../../services/eventService.ts';
 import { formatBytes, uploadFile, type UploadPhase } from '../../services/mediaService.ts';
@@ -136,17 +136,38 @@ export const AlbumUploadPage: React.FC<{ slug: string }> = ({ slug }) => {
     (album.limits.expiresAt && new Date(album.limits.expiresAt).getTime() < Date.now());
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-rose-50/50 via-white to-stone-50 px-4 py-10">
-      <div className="max-w-lg mx-auto">
+    <main className="min-h-screen bg-gradient-to-b from-amber-50/50 via-white to-stone-50">
+      {album.coverImage && (
+        <div className="relative h-48 sm:h-64 overflow-hidden">
+          <img
+            src={album.coverImage}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+          {/* A soft wash so the title below stays legible whatever the photo. */}
+          <div className="absolute inset-0 bg-gradient-to-b from-stone-900/10 via-transparent to-white" />
+        </div>
+      )}
+
+      <div className="max-w-lg mx-auto px-4 pb-14 -mt-10 relative">
         <header className="text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl font-serif font-bold text-stone-900">{album.title}</h1>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 backdrop-blur border border-stone-200 text-[11px] font-semibold text-stone-700 shadow-sm">
+            <Images className="w-3 h-3" aria-hidden="true" />
+            ციფრული ალბომი
+          </span>
+          <h1 className="mt-4 font-serif text-3xl sm:text-4xl font-bold text-stone-900 leading-tight">
+            {album.title}
+          </h1>
           <p className="mt-3 text-[15px] text-stone-700 leading-relaxed">{album.welcomeMessage}</p>
         </header>
 
         {expired ? (
-          <div className="rounded-2xl border border-stone-300 bg-white p-6 text-center">
-            <p className="text-sm font-medium text-stone-800">
-              ამ ალბომში ფაილების ატვირთვა დასრულებულია.
+          <div className="rounded-3xl border border-stone-200 bg-white p-8 text-center shadow-[0_4px_24px_rgba(28,25,23,0.06)]">
+            <p className="font-serif text-lg font-bold text-stone-900">
+              ატვირთვა დასრულებულია
+            </p>
+            <p className="mt-2 text-[14px] text-stone-700 leading-relaxed">
+              ამ ალბომში ახალი ფაილების დამატება აღარ ხდება.
             </p>
             {album.limits.expiresAt && (
               <p className="mt-1.5 text-[13px] text-stone-600">
@@ -163,7 +184,7 @@ export const AlbumUploadPage: React.FC<{ slug: string }> = ({ slug }) => {
         ) : (
           <>
             {!allDone && (
-              <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+              <div className="rounded-3xl border border-stone-200 bg-white p-5 sm:p-6 shadow-[0_4px_24px_rgba(28,25,23,0.06)]">
                 <label htmlFor="uploader-name" className="block text-[13px] font-semibold text-stone-800 mb-1.5">
                   თქვენი სახელი <span className="font-normal text-stone-500">(არასავალდებულო)</span>
                 </label>
@@ -192,21 +213,24 @@ export const AlbumUploadPage: React.FC<{ slug: string }> = ({ slug }) => {
                   type="button"
                   onClick={() => fileRef.current?.click()}
                   disabled={running}
-                  className="mt-4 w-full py-4 px-4 rounded-xl border-2 border-dashed border-stone-300 hover:border-stone-500 hover:bg-stone-50 transition-colors cursor-pointer flex flex-col items-center gap-2 disabled:opacity-60"
+                  className="mt-4 w-full py-7 px-4 rounded-2xl border-2 border-dashed border-stone-300 bg-stone-50/60 hover:border-rose-400 hover:bg-rose-50/40 transition-colors cursor-pointer flex flex-col items-center gap-2.5 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
                 >
-                  <CloudUpload className="w-7 h-7 text-stone-500" aria-hidden="true" />
-                  <span className="text-sm font-semibold text-stone-900">
-                    ფოტოებისა და ვიდეოების ატვირთვა
+                  <span className="w-12 h-12 rounded-2xl bg-white border border-stone-200 flex items-center justify-center shadow-sm">
+                    <CloudUpload className="w-6 h-6 text-rose-500" aria-hidden="true" />
                   </span>
-                  <span className="text-[11px] text-stone-600">
-                    აირჩიეთ რამდენიც გსურთ — ორიგინალი ხარისხი შენარჩუნდება
+                  <span className="text-[15px] font-semibold text-stone-900">
+                    ფოტოებისა და ვიდეოების არჩევა
+                  </span>
+                  <span className="text-[12px] text-stone-600 text-center leading-relaxed max-w-xs">
+                    აირჩიეთ რამდენიც გსურთ — ორიგინალი ხარისხი უცვლელად ინახება,
+                    ფოტოები არ იკუმშება
                   </span>
                 </button>
               </div>
             )}
 
             {queue.length > 0 && (
-              <section className="mt-5 rounded-2xl border border-stone-200 bg-white overflow-hidden shadow-sm">
+              <section className="mt-5 rounded-3xl border border-stone-200 bg-white overflow-hidden shadow-[0_4px_24px_rgba(28,25,23,0.06)]">
                 <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-stone-200 bg-stone-50">
                   <p className="text-[13px] font-semibold text-stone-900">
                     {queue.length} ფაილი · {formatBytes(totalBytes)}
@@ -308,11 +332,13 @@ export const AlbumUploadPage: React.FC<{ slug: string }> = ({ slug }) => {
             )}
 
             {allDone && (
-              <div className="mt-5 rounded-2xl border border-emerald-300 bg-emerald-50 p-6 text-center">
-                <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto mb-3" aria-hidden="true" />
-                <p className="text-base font-semibold text-stone-900">ატვირთვა დასრულდა</p>
-                <p className="mt-1.5 text-sm text-stone-700">
-                  მადლობა, რომ გაგვიზიარეთ მოგონებები ❤️
+              <div className="mt-5 rounded-3xl border border-emerald-200 bg-gradient-to-b from-emerald-50 to-white p-8 text-center shadow-[0_4px_24px_rgba(28,25,23,0.06)]">
+                <span className="w-14 h-14 rounded-2xl bg-white border border-emerald-200 flex items-center justify-center mx-auto mb-4 shadow-sm">
+                  <CheckCircle2 className="w-7 h-7 text-emerald-600" aria-hidden="true" />
+                </span>
+                <p className="font-serif text-xl font-bold text-stone-900">ატვირთვა დასრულდა</p>
+                <p className="mt-2 text-[15px] text-stone-700 leading-relaxed">
+                  მადლობა, რომ გაგვიზიარეთ მოგონებები <Heart className="w-4 h-4 inline-block fill-rose-500 text-rose-500 -mt-0.5" aria-hidden="true" />
                 </p>
                 <button
                   type="button"

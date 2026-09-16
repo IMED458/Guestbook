@@ -263,6 +263,12 @@ service cloud.firestore {
 
     /* ---------------- communication and audit ---------------- */
 
+    match /emailTemplates/{templateId} {
+      // Wording is not sensitive; who may change it is.
+      allow read: if isBackOffice();
+      allow write: if can(EMAILS_SEND());
+    }
+
     match /emailLogs/{logId} {
       allow read: if can(EMAILS_SEND()) || can(ACTIVITY_VIEW());
       allow create: if can(EMAILS_SEND());

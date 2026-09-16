@@ -16,6 +16,7 @@ import { EmailPage } from './EmailPage.tsx';
 import { ActivityPage } from './ActivityPage.tsx';
 import { SettingsPage } from './SettingsPage.tsx';
 import { RequestsPage } from './RequestsPage.tsx';
+import { ClientDetailsPage } from './ClientDetailsPage.tsx';
 
 /**
  * Chooses the back-office page for the current hash, after checking that the
@@ -106,6 +107,8 @@ export const AdminRouter: React.FC = () => {
         // Detail routes carry an id, so they are matched by pattern.
         if (matched?.definition.pattern === 'admin/orders/:id') {
           page = <OrderDetailsPage orderId={matched.params.id} />;
+        } else if (matched?.definition.pattern === 'admin/clients/:id') {
+          page = <ClientDetailsPage clientId={matched.params.id} />;
         } else {
           page = <ComingSoon path={path} isSuperAdmin={isSuperAdmin} />;
         }

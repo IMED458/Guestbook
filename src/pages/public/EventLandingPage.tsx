@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BookHeart, Images, Loader2 } from 'lucide-react';
+import { BookHeart, Images, Loader2, Sparkles } from 'lucide-react';
 import type { EventRecord } from '../../domain/models.ts';
 import { eventService } from '../../services/eventService.ts';
 import { formatDateLong } from '../../domain/dates.ts';
@@ -59,28 +59,41 @@ export const EventLandingPage: React.FC<{ slug: string }> = ({ slug }) => {
   ].filter((c): c is NonNullable<typeof c> => Boolean(c));
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-amber-50/40 via-white to-stone-50 px-4 py-14">
+    <main className="min-h-screen bg-gradient-to-b from-amber-50/50 via-white to-stone-50 px-4 py-16">
       <div className="max-w-md mx-auto text-center">
-        <h1 className="text-3xl sm:text-4xl font-serif font-bold text-stone-900">{event.title}</h1>
-        <p className="mt-2 text-sm text-stone-600">{formatDateLong(event.eventDate)}</p>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-stone-200 text-[11px] font-semibold text-stone-700 shadow-sm">
+          <Sparkles className="w-3 h-3 text-amber-600" aria-hidden="true" />
+          {formatDateLong(event.eventDate)}
+        </span>
 
-        <p className="mt-8 text-[15px] font-medium text-stone-800">რას ისურვებდით?</p>
+        <h1 className="mt-5 font-serif text-4xl sm:text-5xl font-bold text-stone-900 leading-[1.12]">
+          {event.title}
+        </h1>
+        {event.hosts && <p className="mt-3 text-[15px] text-stone-700">{event.hosts}</p>}
 
-        <div className="mt-5 space-y-3">
+        <p className="mt-10 text-[15px] font-medium text-stone-800">რას ისურვებდით?</p>
+
+        <div className="mt-5 space-y-3.5">
           {choices.map((choice) => (
             <a
               key={choice.href}
               href={choice.href}
-              className={`flex items-center gap-4 p-5 rounded-2xl border-2 transition-colors text-left ${choice.tone}`}
+              className={`flex items-center gap-4 p-5 rounded-3xl border-2 transition-all text-left shadow-[0_4px_20px_rgba(28,25,23,0.05)] hover:shadow-[0_6px_28px_rgba(28,25,23,0.09)] hover:-translate-y-0.5 ${choice.tone}`}
             >
-              {choice.icon}
+              <span className="w-12 h-12 rounded-2xl bg-white/80 border border-white flex items-center justify-center shrink-0 shadow-sm">
+                {choice.icon}
+              </span>
               <span>
                 <span className="block text-base font-semibold">{choice.title}</span>
-                <span className="block text-[13px] opacity-80">{choice.subtitle}</span>
+                <span className="block text-[13px] opacity-75">{choice.subtitle}</span>
               </span>
             </a>
           ))}
         </div>
+
+        <p className="mt-10 text-[12px] text-stone-500">
+          ანგარიში არ გჭირდებათ — უბრალოდ აირჩიეთ და გააგრძელეთ.
+        </p>
       </div>
     </main>
   );
