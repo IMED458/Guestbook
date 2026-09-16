@@ -7,6 +7,15 @@ import type { Env } from './env.ts';
  * is nearly expired.
  */
 
+export class HttpError extends Error {
+  constructor(
+    public status: number,
+    message: string
+  ) {
+    super(message);
+  }
+}
+
 interface ServiceAccount {
   project_id: string;
   client_email: string;
@@ -17,6 +26,16 @@ let cachedAccount: ServiceAccount | null = null;
 
 function serviceAccount(env: Env): ServiceAccount {
   if (cachedAccount) return cachedAccount;
+
+  // A missing secret is a deployment mistake, not a bug. Say so plainly
+  // instead of surfacing "internal error" and leaving someone to guess.
+  if (!env.FIREBASE_SERVICE_ACCOUNT) {
+    throw new HttpError(
+      503,
+      'FIREBASE_SERVICE_ACCOUNT is not set on this Worker — run: wrangler secret put FIREBASE_SERVICE_ACCOUNT'
+    );
+  }
+
   try {
     const parsed = JSON.parse(env.FIREBASE_SERVICE_ACCOUNT) as ServiceAccount;
     if (!parsed.client_email || !parsed.private_key) {
@@ -25,7 +44,8 @@ function serviceAccount(env: Env): ServiceAccount {
     cachedAccount = parsed;
     return parsed;
   } catch (err) {
-    throw new Error(`FIREBASE_SERVICE_ACCOUNT is not valid service-account JSON: ${err}`);
+    if (err instanceof HttpError) throw err;
+    throw new HttpError(503, `FIREBASE_SERVICE_ACCOUNT is not valid service-account JSON: ${err}`);
   }
 }
 
@@ -146,15 +166,6 @@ async function identityRequest<T>(
   }
 
   return text ? (JSON.parse(text) as T) : ({} as T);
-}
-
-export class HttpError extends Error {
-  constructor(
-    public status: number,
-    message: string
-  ) {
-    super(message);
-  }
 }
 
 export interface CreatedAuthUser {

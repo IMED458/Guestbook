@@ -124,6 +124,37 @@ async function authorizeUpload(
 }
 
 /**
+ * Confirm the album or guest book still exists and is still accepting files.
+ * Cheaper than authorizeUpload because it makes no decision about one
+ * particular file — it only answers whether this destination is open.
+ */
+async function assertDestinationAcceptsUploads(
+  env: Env,
+  destination: { albumId?: string; guestbookId?: string }
+): Promise<void> {
+  if (destination.albumId) {
+    const album = await getDocument<AlbumDoc>(env, `albums/${destination.albumId}`);
+    if (!album) throw new HttpError(404, 'album not found');
+    if (album.archivedAt) throw new HttpError(403, 'this album is archived');
+    if (album.limits?.uploadEnabled === false) {
+      throw new HttpError(403, 'uploads are closed for this album');
+    }
+    if (album.limits?.expiresAt && new Date(album.limits.expiresAt).getTime() < Date.now()) {
+      throw new HttpError(403, 'the upload window for this album has ended');
+    }
+    return;
+  }
+
+  if (destination.guestbookId) {
+    const book = await getDocument<GuestbookDoc>(env, `guestbooks/${destination.guestbookId}`);
+    if (!book) throw new HttpError(404, 'guest book not found');
+    return;
+  }
+
+  throw new HttpError(400, 'an album or a guest book must be named');
+}
+
+/**
  * The key handed back on sign-part and complete has to be one this Worker
  * issued for this destination, or a caller could complete an upload into
  * someone else's prefix.
@@ -172,8 +203,16 @@ uploadRoutes.post('/create', async (c) => {
 });
 
 uploadRoutes.post('/multipart/sign-part', async (c) => {
+  const ip = clientAddress(c.req.raw);
+  await enforceRateLimit(c.env, `signpart:${ip}`, 5000, 3600);
+
   const input = signPartSchema.parse(await c.req.json());
   assertKeyBelongsTo(input.objectKey, input);
+
+  // Re-check the destination on every part. Without this the endpoint would
+  // hand out a signature for any well-formed key, so naming an album that
+  // does not exist — or one whose uploads are closed — would still be signed.
+  await assertDestinationAcceptsUploads(c.env, input);
 
   return c.json({
     url: await presignUploadPart(c.env, input.objectKey, input.uploadId, input.partNumber),
@@ -212,6 +251,8 @@ uploadRoutes.post('/multipart/complete', async (c) => {
 });
 
 uploadRoutes.post('/multipart/abort', async (c) => {
+  await enforceRateLimit(c.env, `abort:${clientAddress(c.req.raw)}`, 500, 3600);
+
   const input = abortSchema.parse(await c.req.json());
   await abortMultipartUpload(c.env, input.objectKey, input.uploadId);
   return c.json({ ok: true });
