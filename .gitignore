@@ -6,6 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+# Public, non-secret production config — see the header inside it.
+!.env.production
 
 # Never let a service-account key near the repository.
 *service-account*.json
