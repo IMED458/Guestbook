@@ -1,6 +1,8 @@
 {
   "include": ["src", "scripts"],
-  "exclude": ["workers", "node_modules", "dist"],
+  // src/archive holds the retired public site: kept for reference,
+  // imported by nothing, and not part of the build.
+  "exclude": ["workers", "node_modules", "dist", "src/archive"],
   "compilerOptions": {
     "target": "ES2022",
     "experimentalDecorators": true,
