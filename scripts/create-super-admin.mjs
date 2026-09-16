@@ -8,7 +8,10 @@
  *
  * Usage:
  *   GOOGLE_APPLICATION_CREDENTIALS=./service-account.json \
- *   node scripts/create-super-admin.mjs --username imedo --password 'a strong one'
+ *   node scripts/create-super-admin.mjs --username imedo
+ *
+ * The password is asked for interactively and echoed as dots, so it never
+ * reaches the shell history, the process list, or a CI log.
  *
  * The service-account file must never be committed; .gitignore already covers
  * *service-account*.json.
@@ -16,6 +19,7 @@
 
 import { createSign } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import { createInterface } from 'node:readline';
 import { parseArgs } from 'node:util';
 
 const { values } = parseArgs({
@@ -36,13 +40,44 @@ function fail(message) {
 }
 
 const username = (values.username || '').trim().toLowerCase().replace(/\s+/g, '');
-const password = values.password || '';
 
 if (!/^[a-z][a-z0-9._-]{2,31}$/.test(username)) {
   fail('--username must start with a letter and use only a-z, 0-9, dot, dash or underscore (3-32 chars)');
 }
+
+/** Read a password without leaving it in argv, the process list or history. */
+async function promptPassword(label) {
+  const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true });
+
+  const answer = await new Promise((resolve) => {
+    const onData = (char) => {
+      // Stop masking once the line is submitted.
+      if (['\n', '\r', '\u0004'].includes(String(char))) {
+        process.stdin.removeListener('data', onData);
+        return;
+      }
+      process.stdout.write('\u001b[2K\u001b[200D' + label + '•'.repeat(rl.line.length));
+    };
+    process.stdin.on('data', onData);
+    rl.question(label, (value) => {
+      process.stdout.write('\n');
+      rl.close();
+      resolve(value);
+    });
+  });
+
+  return answer;
+}
+
+const password = values.password || (await promptPassword('პაროლი: '));
+
 if (password.length < 10) {
-  fail('--password must be at least 10 characters for the owner of the system');
+  fail('პაროლი სულ მცირე 10 სიმბოლო უნდა იყოს — ეს სისტემის მფლობელის ანგარიშია');
+}
+
+const confirmation = values.password || (await promptPassword('გაიმეორეთ პაროლი: '));
+if (password !== confirmation) {
+  fail('პაროლები არ ემთხვევა');
 }
 
 const credentialsPath = values.credentials || process.env.GOOGLE_APPLICATION_CREDENTIALS;

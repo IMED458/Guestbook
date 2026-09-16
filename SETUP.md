@@ -158,16 +158,12 @@ Console → **Project settings** → *Service accounts* → **Generate new priva
 production-ზე უკარებელი კარია. პირველ მფლობელს შენ ქმნი:
 
 ```bash
-GOOGLE_APPLICATION_CREDENTIALS=./service-account.json \
-npm run create-super-admin -- \
-  --username imedo \
-  --password 'აქ ძლიერი პაროლი' \
-  --firstName გიორგი \
-  --lastName იმედაშვილი \
-  --email you@example.com
+GOOGLE_APPLICATION_CREDENTIALS=~/Downloads/guestbook-40634-firebase-adminsdk-*.json \
+npm run create-super-admin -- --username imedo --firstName გიორგი --lastName იმედაშვილი
 ```
 
-პაროლი არსად არ ინახება და არ ილოგება. შემდეგ შედი `#/login`-ზე username-ით.
+პაროლს ინტერაქტიულად გკითხავს და წერტილებად აჩვენებს, ანუ ის არც shell-ის
+ისტორიაში ხვდება, არც პროცესების სიაში. შემდეგ შედი `#/login`-ზე username-ით.
 
 ---
 
