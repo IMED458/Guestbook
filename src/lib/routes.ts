@@ -50,6 +50,7 @@ export const ROUTES: RouteDefinition[] = [
   { pattern: 'client/guestbook', area: 'client', labelKey: 'nav.myGuestbook' },
   { pattern: 'client/album', area: 'client', labelKey: 'nav.myAlbum' },
   { pattern: 'client/orders', area: 'client', labelKey: 'nav.myOrders' },
+  { pattern: 'client/payments', area: 'client', labelKey: 'nav.myPayments' },
   { pattern: 'client/profile', area: 'client', labelKey: 'nav.myProfile' },
 
   { pattern: 'g/:slug', area: 'public', labelKey: 'nav.guestbookPublic' },

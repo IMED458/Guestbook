@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/layout/Navbar.tsx';
 import { LandingPage } from './components/landing/LandingPage.tsx';
 import { GuestBookPublicView } from './components/guest-book/GuestBookPublicView.tsx';
-import { AdminDashboard } from './components/dashboard/AdminDashboard.tsx';
 import { GuestBookWizard } from './components/dashboard/GuestBookWizard.tsx';
 import { AuthModal } from './components/auth/AuthModal.tsx';
 import { LoginPage } from './pages/auth/LoginPage.tsx';
@@ -18,6 +17,7 @@ import { CookieBanner } from './components/common/CookieBanner.tsx';
 import { api } from './lib/api.ts';
 import { useI18n } from './lib/i18n.tsx';
 import { LEGAL_SLUGS, type LegalSlug } from './content/legal.ts';
+import { navigate } from './lib/routes.ts';
 import { User, GuestBook } from './types.ts';
 
 type AppView = 'landing' | 'public' | 'dashboard' | 'legal' | 'login' | 'admin' | 'album' | 'client' | 'event';
@@ -97,8 +97,11 @@ export default function App() {
       }
     }
 
+    // The old back office lived at #/dashboard. Forward it rather than
+    // breaking a bookmark or a link already sent to somebody.
     if (hash === 'dashboard' || hash.startsWith('dashboard/')) {
-      setCurrentView('dashboard');
+      window.location.replace(`${window.location.pathname}${window.location.search}#/admin`);
+      setCurrentView('admin');
       return;
     }
 
@@ -118,7 +121,7 @@ export default function App() {
       setActiveSlug(slug);
       window.location.hash = `#/g/${slug}`;
     } else if (view === 'dashboard') {
-      window.location.hash = '#/dashboard';
+      window.location.hash = '#/admin';
     } else {
       window.location.hash = '#/';
     }
@@ -160,7 +163,7 @@ export default function App() {
       setPendingWizard(false);
       setIsWizardOpen(true);
     } else {
-      navigateTo('dashboard');
+      navigate('admin');
     }
   };
 
@@ -168,7 +171,7 @@ export default function App() {
     try {
       const res = await api.auth.demoLogin();
       setCurrentUser(res.user);
-      navigateTo('dashboard');
+      navigate('admin');
     } catch {
       openAuth('login');
     }
@@ -183,7 +186,7 @@ export default function App() {
   const handleGuestBookCreated = (newBook: GuestBook) => {
     setIsWizardOpen(false);
     setInitialBookIdForDashboard(newBook.id);
-    navigateTo('dashboard');
+    navigate('admin');
   };
 
   if (currentView === 'login') {
@@ -221,7 +224,7 @@ export default function App() {
           onOpenDemo={handleDemoLogin}
           onOpenDemoBook={() => navigateTo('public', 'wedding-nika-ana')}
           onOpenWizard={handleOpenCreate}
-          onOpenDashboard={() => navigateTo('dashboard')}
+          onOpenDashboard={() => navigate('admin')}
           onGoHome={() => navigateTo('landing')}
           onLogout={handleLogout}
         />
@@ -241,7 +244,7 @@ export default function App() {
           <GuestBookPublicView
             slug={activeSlug}
             onBackToHome={() => navigateTo('landing')}
-            onOpenDashboard={currentUser ? () => navigateTo('dashboard') : undefined}
+            onOpenDashboard={currentUser ? () => navigate('admin') : undefined}
           />
         )}
 
@@ -250,15 +253,6 @@ export default function App() {
             slug={legalSlug}
             onBackToHome={() => navigateTo('landing')}
             onNavigateLegal={navigateToLegal}
-          />
-        )}
-
-        {currentView === 'dashboard' && (
-          <AdminDashboard
-            initialGuestBookId={initialBookIdForDashboard}
-            onOpenWizard={() => setIsWizardOpen(true)}
-            onViewPublicBook={(slug) => navigateTo('public', slug)}
-            onLogout={handleLogout}
           />
         )}
       </main>

@@ -217,7 +217,7 @@ export const ClientDashboard: React.FC = () => {
 
           {path === 'client/profile' ? (
             <>
-              <h1 className="text-2xl font-semibold text-stone-900 mb-6">პროფილი</h1>
+              <h1 className="font-serif text-[26px] font-bold text-stone-900 mb-6">პროფილი</h1>
               <section className="bg-white border border-stone-200 rounded-xl p-5 max-w-md">
                 <dl className="space-y-2 text-[13px] mb-5">
                   {[
@@ -251,9 +251,58 @@ export const ClientDashboard: React.FC = () => {
                 </button>
               </section>
             </>
+          ) : path === 'client/payments' ? (
+            <>
+              <h1 className="font-serif text-[26px] font-bold text-stone-900 mb-6">გადახდები</h1>
+              {orders.length === 0 ? (
+                <div className="bg-white border border-stone-200 rounded-2xl"><EmptyState title="შეკვეთა ჯერ არ არის" /></div>
+              ) : (
+                <>
+                  <div className="grid gap-3 sm:grid-cols-3 mb-5">
+                    {[
+                      ['სულ დარიცხული', formatGel(orders.reduce((s, o) => s + o.total, 0)), 'text-stone-900'],
+                      ['გადახდილი', formatGel(orders.reduce((s, o) => s + o.paidAmount, 0)), 'text-emerald-800'],
+                      ['დარჩენილი', formatGel(orders.reduce((s, o) => s + Math.max(0, o.balance), 0)), 'text-rose-800'],
+                    ].map(([label, value, tone]) => (
+                      <div key={label} className="rounded-xl border border-stone-200 bg-white px-4 py-3.5">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">{label}</p>
+                        <p className={`mt-1 font-serif text-2xl font-bold ${tone}`}>{value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden">
+                    <table className="w-full text-left text-[13px]">
+                      <thead className="bg-stone-50 border-b border-stone-200">
+                        <tr>
+                          <th scope="col" className="px-4 py-2.5 font-semibold text-stone-700">შეკვეთა</th>
+                          <th scope="col" className="px-4 py-2.5 font-semibold text-stone-700">სრული ფასი</th>
+                          <th scope="col" className="px-4 py-2.5 font-semibold text-stone-700">გადახდილი</th>
+                          <th scope="col" className="px-4 py-2.5 font-semibold text-stone-700">დარჩენილი</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {orders.map((order) => (
+                          <tr key={order.id} className="border-b border-stone-100 last:border-0">
+                            <td className="px-4 py-3 font-mono text-stone-900">{order.orderNumber}</td>
+                            <td className="px-4 py-3 text-stone-800">{formatGel(order.total)}</td>
+                            <td className="px-4 py-3 text-emerald-800">{formatGel(order.paidAmount)}</td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-block px-2 py-0.5 rounded-full border text-[11px] font-semibold ${PAYMENT_STATUS_TONE[order.paymentStatus]}`}>
+                                {formatGel(order.balance)}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </>
           ) : path === 'client/orders' ? (
             <>
-              <h1 className="text-2xl font-semibold text-stone-900 mb-6">ჩემი შეკვეთები</h1>
+              <h1 className="font-serif text-[26px] font-bold text-stone-900 mb-6">ჩემი შეკვეთები</h1>
               {orders.length === 0 ? (
                 <div className="bg-white border border-stone-200 rounded-xl"><EmptyState title="შეკვეთა ჯერ არ არის" /></div>
               ) : (
@@ -291,8 +340,8 @@ export const ClientDashboard: React.FC = () => {
             </>
           ) : (
             <>
-              <h1 className="text-2xl font-semibold text-stone-900">
-                {path === 'client/album' ? 'ჩემი ალბომი' : path === 'client/guestbook' ? 'ჩემი სტუმრების წიგნი' : 'მთავარი'}
+              <h1 className="font-serif text-[26px] font-bold text-stone-900">
+                {path === 'client/album' ? 'ჩემი ალბომი' : path === 'client/guestbook' ? 'ჩემი სტუმრების წიგნი' : path === 'client/events' ? 'ჩემი ღონისძიებები' : 'მთავარი'}
               </h1>
               <p className="mt-1 text-sm text-stone-600 mb-6">
                 გამარჯობა, {user.firstName || user.username}.
