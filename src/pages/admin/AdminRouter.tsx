@@ -7,6 +7,7 @@ import { DashboardPage } from './DashboardPage.tsx';
 import { ClientsPage } from './ClientsPage.tsx';
 import { CatalogPage } from './CatalogPage.tsx';
 import { UsersPage } from './UsersPage.tsx';
+import { EventsPage } from './EventsPage.tsx';
 
 /**
  * Chooses the back-office page for the current hash, after checking that the
@@ -68,6 +69,9 @@ export const AdminRouter: React.FC = () => {
         break;
       case 'admin/users':
         page = <UsersPage />;
+        break;
+      case 'admin/events':
+        page = <EventsPage />;
         break;
       default:
         page = <ComingSoon path={path} isSuperAdmin={isSuperAdmin} />;

@@ -7,6 +7,7 @@ import { GuestBookWizard } from './components/dashboard/GuestBookWizard.tsx';
 import { AuthModal } from './components/auth/AuthModal.tsx';
 import { LoginPage } from './pages/auth/LoginPage.tsx';
 import { AdminRouter } from './pages/admin/AdminRouter.tsx';
+import { AlbumUploadPage } from './pages/public/AlbumUploadPage.tsx';
 
 
 import { LegalPage } from './components/legal/LegalPage.tsx';
@@ -17,7 +18,7 @@ import { useI18n } from './lib/i18n.tsx';
 import { legalDocs, type LegalSlug } from './content/legal.ts';
 import { User, GuestBook } from './types.ts';
 
-type AppView = 'landing' | 'public' | 'dashboard' | 'legal' | 'login' | 'admin';
+type AppView = 'landing' | 'public' | 'dashboard' | 'legal' | 'login' | 'admin' | 'album';
 
 const isLegalSlug = (value: string): value is LegalSlug =>
   Object.prototype.hasOwnProperty.call(legalDocs, value);
@@ -51,6 +52,15 @@ export default function App() {
     if (hash === 'admin' || hash.startsWith('admin/')) {
       setCurrentView('admin');
       return;
+    }
+
+    if (hash.startsWith('a/')) {
+      const slug = hash.slice(2).split(/[/?]/)[0];
+      if (slug) {
+        setActiveSlug(decodeURIComponent(slug));
+        setCurrentView('album');
+        return;
+      }
     }
 
     if (hash.startsWith('g/')) {
@@ -166,6 +176,10 @@ export default function App() {
 
   if (currentView === 'admin') {
     return <AdminRouter />;
+  }
+
+  if (currentView === 'album') {
+    return <AlbumUploadPage slug={activeSlug} />;
   }
 
   return (
