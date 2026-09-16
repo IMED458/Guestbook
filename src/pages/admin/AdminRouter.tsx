@@ -12,6 +12,10 @@ import { OrdersPage } from './OrdersPage.tsx';
 import { OrderDetailsPage } from './OrderDetailsPage.tsx';
 import { AlbumsPage } from './AlbumsPage.tsx';
 import { QrStudioPage } from './QrStudioPage.tsx';
+import { EmailPage } from './EmailPage.tsx';
+import { ActivityPage } from './ActivityPage.tsx';
+import { SettingsPage } from './SettingsPage.tsx';
+import { RequestsPage } from './RequestsPage.tsx';
 
 /**
  * Chooses the back-office page for the current hash, after checking that the
@@ -86,6 +90,18 @@ export const AdminRouter: React.FC = () => {
       case 'admin/qr':
         page = <QrStudioPage />;
         break;
+      case 'admin/email':
+        page = <EmailPage />;
+        break;
+      case 'admin/requests':
+        page = <RequestsPage />;
+        break;
+      case 'admin/activity':
+        page = <ActivityPage />;
+        break;
+      case 'admin/settings':
+        page = <SettingsPage />;
+        break;
       default:
         // Detail routes carry an id, so they are matched by pattern.
         if (matched?.definition.pattern === 'admin/orders/:id') {
@@ -126,7 +142,7 @@ const ComingSoon: React.FC<{ path: string; isSuperAdmin: boolean }> = ({ path })
           განყოფილება მაშინ ემატება, როცა რეალურად მუშაობს — ცრუ ღილაკები არ იდგმება.
         </p>
         <p className="mt-3 text-[13px] text-stone-600 leading-relaxed">
-          უკვე მუშაობს: მთავარი, კლიენტები, მომხმარებლები, პროდუქტები და სერვისები.
+          თუ ეს გზავნილი მოულოდნელად ხედავთ, ბმული არასწორია — დაბრუნდით მენიუთი.
         </p>
       </div>
     </div>

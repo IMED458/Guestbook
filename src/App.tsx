@@ -9,6 +9,7 @@ import { LoginPage } from './pages/auth/LoginPage.tsx';
 import { AdminRouter } from './pages/admin/AdminRouter.tsx';
 import { AlbumUploadPage } from './pages/public/AlbumUploadPage.tsx';
 import { ClientDashboard } from './pages/client/ClientDashboard.tsx';
+import { EventLandingPage } from './pages/public/EventLandingPage.tsx';
 
 
 import { LegalPage } from './components/legal/LegalPage.tsx';
@@ -19,7 +20,7 @@ import { useI18n } from './lib/i18n.tsx';
 import { legalDocs, type LegalSlug } from './content/legal.ts';
 import { User, GuestBook } from './types.ts';
 
-type AppView = 'landing' | 'public' | 'dashboard' | 'legal' | 'login' | 'admin' | 'album' | 'client';
+type AppView = 'landing' | 'public' | 'dashboard' | 'legal' | 'login' | 'admin' | 'album' | 'client' | 'event';
 
 const isLegalSlug = (value: string): value is LegalSlug =>
   Object.prototype.hasOwnProperty.call(legalDocs, value);
@@ -58,6 +59,15 @@ export default function App() {
     if (hash === 'client' || hash.startsWith('client/')) {
       setCurrentView('client');
       return;
+    }
+
+    if (hash.startsWith('e/')) {
+      const slug = hash.slice(2).split(/[/?]/)[0];
+      if (slug) {
+        setActiveSlug(decodeURIComponent(slug));
+        setCurrentView('event');
+        return;
+      }
     }
 
     if (hash.startsWith('a/')) {
@@ -190,6 +200,10 @@ export default function App() {
 
   if (currentView === 'album') {
     return <AlbumUploadPage slug={activeSlug} />;
+  }
+
+  if (currentView === 'event') {
+    return <EventLandingPage slug={activeSlug} />;
   }
 
   return (
