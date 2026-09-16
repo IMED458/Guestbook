@@ -215,16 +215,19 @@ service cloud.firestore {
     /* ---------------- orders and money ---------------- */
 
     match /orders/{orderId} {
-      allow get: if can(ORDERS_VIEW()) || ownsClient(resource.data.clientId);
-      allow list: if can(ORDERS_VIEW()) || isClient();
+      // `isClient()` here would have let any client list every order in the
+      // system. Rules are not filters, so a client's query must constrain
+      // clientId itself — an unfiltered list is then refused outright, which
+      // is the behaviour we want.
+      allow read: if can(ORDERS_VIEW()) || ownsClient(resource.data.clientId);
       allow create: if can(ORDERS_CREATE());
       allow update: if can(ORDERS_EDIT());
       allow delete: if can(ORDERS_DELETE());
     }
 
     match /payments/{paymentId} {
-      allow get: if can(PAYMENTS_VIEW()) || ownsClient(resource.data.clientId);
-      allow list: if can(PAYMENTS_VIEW()) || isClient();
+      // Same reasoning as orders: scoped by the query, not by a blanket role.
+      allow read: if can(PAYMENTS_VIEW()) || ownsClient(resource.data.clientId);
       allow create, update: if can(PAYMENTS_EDIT());
       // Money records are corrected, not erased; only the owner of the system
       // may remove one.

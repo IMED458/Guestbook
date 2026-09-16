@@ -8,6 +8,7 @@ import { AuthModal } from './components/auth/AuthModal.tsx';
 import { LoginPage } from './pages/auth/LoginPage.tsx';
 import { AdminRouter } from './pages/admin/AdminRouter.tsx';
 import { AlbumUploadPage } from './pages/public/AlbumUploadPage.tsx';
+import { ClientDashboard } from './pages/client/ClientDashboard.tsx';
 
 
 import { LegalPage } from './components/legal/LegalPage.tsx';
@@ -18,7 +19,7 @@ import { useI18n } from './lib/i18n.tsx';
 import { legalDocs, type LegalSlug } from './content/legal.ts';
 import { User, GuestBook } from './types.ts';
 
-type AppView = 'landing' | 'public' | 'dashboard' | 'legal' | 'login' | 'admin' | 'album';
+type AppView = 'landing' | 'public' | 'dashboard' | 'legal' | 'login' | 'admin' | 'album' | 'client';
 
 const isLegalSlug = (value: string): value is LegalSlug =>
   Object.prototype.hasOwnProperty.call(legalDocs, value);
@@ -51,6 +52,11 @@ export default function App() {
 
     if (hash === 'admin' || hash.startsWith('admin/')) {
       setCurrentView('admin');
+      return;
+    }
+
+    if (hash === 'client' || hash.startsWith('client/')) {
+      setCurrentView('client');
       return;
     }
 
@@ -176,6 +182,10 @@ export default function App() {
 
   if (currentView === 'admin') {
     return <AdminRouter />;
+  }
+
+  if (currentView === 'client') {
+    return <ClientDashboard />;
   }
 
   if (currentView === 'album') {
