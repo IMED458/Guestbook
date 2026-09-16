@@ -3,6 +3,7 @@ import type { SystemSettings } from '../../domain/models.ts';
 import { settingsService } from '../../services/systemService.ts';
 import { formatBytes } from '../../services/mediaService.ts';
 import { useSession } from '../../lib/session.tsx';
+import { useBranding } from '../../lib/branding.tsx';
 import { Field, inputClass } from '../../components/ui/Field.tsx';
 import { primaryButton } from '../../components/ui/Modal.tsx';
 import { LoadingState } from '../../components/ui/DataState.tsx';
@@ -10,6 +11,7 @@ import { useToast } from '../../components/ui/Toast.tsx';
 
 export const SettingsPage: React.FC = () => {
   const { user } = useSession();
+  const brand = useBranding();
   const toast = useToast();
 
   const [settings, setSettings] = useState<SystemSettings | null>(null);
@@ -24,6 +26,7 @@ export const SettingsPage: React.FC = () => {
     setSaving(true);
     try {
       await settingsService.save(settings, user?.id || '');
+      await brand.reload();
       toast.success('პარამეტრები შენახულია');
     } catch (err) {
       console.error('settings save failed', err);
@@ -40,8 +43,21 @@ export const SettingsPage: React.FC = () => {
   return (
     <div className="p-6 lg:p-8 max-w-2xl">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold text-stone-900">პარამეტრები</h1>
+        <h1 className="font-serif text-[26px] font-bold text-stone-900">პარამეტრები</h1>
+        <p className="mt-1 text-sm text-stone-600">
+          კომპანიის მონაცემები ერთ ადგილას — იქიდან იკითხება ინვოისი, საიტის
+          ქვედა ნაწილი და სამართლებრივი გვერდები.
+        </p>
       </header>
+
+      {!brand.complete && (
+        <div role="note" className="mb-5 rounded-2xl border border-amber-300 bg-amber-50 p-4">
+          <p className="text-[13px] text-amber-900 leading-relaxed">
+            რეკვიზიტები ჯერ შევსებული არ არის. სანამ არ შეავსებთ, ინვოისი და
+            სამართლებრივი გვერდები ადგილმჭერ ტექსტს აჩვენებს.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-5">
         <section className="bg-white border border-stone-200 rounded-xl p-5 space-y-4">
@@ -60,7 +76,7 @@ export const SettingsPage: React.FC = () => {
             </Field>
           </div>
 
-          <Field id="legal-name" label="იურიდიული სახელწოდება" hint="გამოჩნდება საჯარო სამართლებრივ გვერდებზე.">
+          <Field id="legal-name" label="იურიდიული სახელწოდება" hint="გამოჩნდება ინვოისზე, საიტის ქვედა ნაწილსა და სამართლებრივ გვერდებზე.">
             {(d) => <input id="legal-name" value={settings.companyLegalName || ''} onChange={(e) => set({ companyLegalName: e.target.value })} aria-describedby={d} className={inputClass} />}
           </Field>
 

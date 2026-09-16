@@ -17,6 +17,7 @@ interface ImportMetaEnv {
   readonly VITE_TURNSTILE_SITE_KEY?: string;
   readonly VITE_EMAILJS_PUBLIC_KEY?: string;
   readonly VITE_EMAILJS_SERVICE_ID?: string;
+  readonly VITE_EMAILJS_TEMPLATE_DEFAULT?: string;
 }
 
 interface ImportMeta {

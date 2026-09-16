@@ -11,7 +11,25 @@ import { byNewest, createOne, listWhere, newId, nowIso } from './firestoreHelper
 const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '';
 const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || '';
 
-export const emailConfigured = Boolean(PUBLIC_KEY && SERVICE_ID);
+/**
+ * One EmailJS template can carry every message we send: the subject and the
+ * body travel as variables, so the template is a shell rather than a letter.
+ * A per-message template id is still honoured when one is configured, for
+ * anyone who wants different layouts.
+ */
+const DEFAULT_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_DEFAULT || '';
+
+export const emailConfigured = Boolean(PUBLIC_KEY && SERVICE_ID && DEFAULT_TEMPLATE_ID);
+
+/** Which EmailJS template carries this message. */
+export function resolveTemplateId(templateEnv?: string, override?: string): string {
+  if (override) return override;
+  if (templateEnv) {
+    const specific = (import.meta.env as Record<string, string>)[templateEnv];
+    if (specific) return specific;
+  }
+  return DEFAULT_TEMPLATE_ID;
+}
 
 export interface EmailTemplate {
   key: string;
@@ -125,6 +143,8 @@ export function templateVariables(text: string): string[] {
 
 export interface SendInput {
   templateKey: string;
+  /** Overrides the template id for this one send. */
+  emailjsTemplateId?: string;
   recipient: string;
   recipientName: string;
   subject: string;
@@ -137,10 +157,12 @@ export interface SendInput {
 export const emailService = {
   async send(input: SendInput, actor: { id: string; name: string }): Promise<void> {
     const template = EMAIL_TEMPLATES.find((t) => t.key === input.templateKey);
-    const templateId = template ? (import.meta.env as Record<string, string>)[template.templateEnv] : '';
+    const templateId = resolveTemplateId(template?.templateEnv, input.emailjsTemplateId);
 
-    if (!emailConfigured) throw new Error('EmailJS არ არის კონფიგურირებული');
-    if (!templateId) throw new Error(`ამ თარგისთვის EmailJS-ის template id არ არის მითითებული (${template?.templateEnv})`);
+    if (!PUBLIC_KEY || !SERVICE_ID) throw new Error('EmailJS არ არის კონფიგურირებული');
+    if (!templateId) {
+      throw new Error('EmailJS-ის template id არ არის მითითებული — შეავსეთ VITE_EMAILJS_TEMPLATE_DEFAULT');
+    }
 
     const logId = newId('eml');
     const now = nowIso();
@@ -150,10 +172,17 @@ export const emailService = {
         SERVICE_ID,
         templateId,
         {
+          // Common EmailJS field names, sent under several aliases so the
+          // template works whichever convention it was written with.
           to_email: input.recipient,
+          email: input.recipient,
+          reply_to: input.recipient,
           to_name: input.recipientName,
+          name: input.recipientName,
           subject: input.subject,
+          title: input.subject,
           message: input.body,
+          content: input.body,
         },
         { publicKey: PUBLIC_KEY }
       );

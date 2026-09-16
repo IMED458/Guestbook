@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { ArrowLeft, AlertTriangle } from 'lucide-react';
 import { useI18n } from '../../lib/i18n.tsx';
-import { legalDocs, legalNavLabels, type LegalSlug } from '../../content/legal.ts';
-import { businessDetailsComplete, SITE } from '../../lib/site-config.ts';
+import { LEGAL_SLUGS, buildLegalDocs, legalNavLabels, type LegalSlug } from '../../content/legal.ts';
+import { SITE } from '../../lib/site-config.ts';
+import { useBranding } from '../../lib/branding.tsx';
 
 interface LegalPageProps {
   slug: LegalSlug;
@@ -12,12 +13,28 @@ interface LegalPageProps {
 
 export const LegalPage: React.FC<LegalPageProps> = ({ slug, onBackToHome, onNavigateLegal }) => {
   const { lang } = useI18n();
-  const doc = legalDocs[slug][lang === 'ka' ? 'ka' : 'en'];
+  const brand = useBranding();
+  // Built at render time so the operator's details come from Settings.
+  const docs = useMemo(
+    () =>
+      buildLegalDocs({
+        productName: brand.productName,
+        legalName: brand.legalName,
+        registrationNumber: brand.registrationNumber,
+        address: brand.address,
+        email: brand.email,
+        privacyEmail: brand.email || SITE.privacyEmail,
+        lastUpdated: brand.settings?.updatedAt?.slice(0, 10) || SITE.lastUpdated,
+      }),
+    [brand]
+  );
+
+  const doc = docs[slug][lang === 'ka' ? 'ka' : 'en'];
 
   useEffect(() => {
-    document.title = `${doc.title} — ${SITE.productName}`;
+    document.title = `${doc.title} — ${brand.productName}`;
     window.scrollTo({ top: 0 });
-  }, [doc.title]);
+  }, [doc.title, brand.productName]);
 
   return (
     <div className="flex-1 bg-stone-50">
@@ -39,7 +56,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({ slug, onBackToHome, onNavi
           <time dateTime={SITE.lastUpdated}>{SITE.lastUpdated}</time>
         </p>
 
-        {!businessDetailsComplete && (
+        {!brand.complete && (
           <div
             role="note"
             className="mt-6 flex gap-3 p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-sm"
@@ -47,8 +64,8 @@ export const LegalPage: React.FC<LegalPageProps> = ({ slug, onBackToHome, onNavi
             <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" aria-hidden="true" />
             <p>
               {lang === 'ka'
-                ? 'ეს დოკუმენტი შაბლონია: ოპერატორის იურიდიული რეკვიზიტები ჯერ არ არის შევსებული. საიტის გამოქვეყნებამდე შეავსეთ src/lib/site-config.ts.'
-                : 'This document is a template: the operator’s legal details have not been filled in yet. Complete src/lib/site-config.ts before publishing.'}
+                ? 'ეს დოკუმენტი შაბლონია: ოპერატორის იურიდიული რეკვიზიტები ჯერ არ არის შევსებული. შეავსეთ სამართავ პანელში — პარამეტრები → კომპანია.'
+                : 'This document is a template: the operator’s legal details have not been filled in yet. Complete them in Settings → Company.'}
             </p>
           </div>
         )}
@@ -85,7 +102,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({ slug, onBackToHome, onNavi
             {lang === 'ka' ? 'სხვა დოკუმენტები' : 'Other documents'}
           </h2>
           <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
-            {(Object.keys(legalDocs) as LegalSlug[])
+            {LEGAL_SLUGS
               .filter((s) => s !== slug)
               .map((s) => (
                 <li key={s}>

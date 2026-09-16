@@ -2,7 +2,7 @@ import React from 'react';
 import { Cookie } from 'lucide-react';
 import { useI18n } from '../../lib/i18n.tsx';
 import { legalNavLabels, type LegalSlug } from '../../content/legal.ts';
-import { businessDetailsComplete, SITE } from '../../lib/site-config.ts';
+import { useBranding } from '../../lib/branding.tsx';
 
 interface SiteFooterProps {
   onNavigateLegal: (slug: LegalSlug) => void;
@@ -14,6 +14,7 @@ export const SiteFooter: React.FC<SiteFooterProps> = ({
   onOpenCookieSettings
 }) => {
   const { lang } = useI18n();
+  const brand = useBranding();
   const ka = lang === 'ka';
 
   return (
@@ -22,7 +23,7 @@ export const SiteFooter: React.FC<SiteFooterProps> = ({
         {/* Identity */}
         <div>
           <span className="font-serif font-bold text-white text-base tracking-tight">
-            {SITE.productName}
+            {brand.productName}
           </span>
           <p className="mt-2 text-stone-400 leading-relaxed">
             {ka
@@ -70,37 +71,37 @@ export const SiteFooter: React.FC<SiteFooterProps> = ({
             {ka ? 'ოპერატორი' : 'Operator'}
           </h2>
           <ul className="mt-3 space-y-1.5 text-stone-300">
-            <li>{SITE.legalName}</li>
-            <li className="text-stone-400">{SITE.address}</li>
+            <li>{brand.legalName}</li>
+            <li className="text-stone-400">{brand.address}</li>
             <li className="text-stone-400">
               {ka ? 'ს/ნ: ' : 'Reg. no: '}
-              {SITE.registrationNumber}
+              {brand.registrationNumber}
             </li>
             <li>
               <a
-                href={`mailto:${SITE.email}`}
+                href={`mailto:${brand.email}`}
                 className="text-stone-300 hover:text-white underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300 rounded"
               >
-                {SITE.email}
+                {brand.email}
               </a>
             </li>
-            {SITE.phone && (
+            {brand.phone && (
               <li>
                 <a
-                  href={`tel:${SITE.phone.replace(/\s/g, '')}`}
+                  href={`tel:${brand.phone.replace(/\s/g, '')}`}
                   className="text-stone-300 hover:text-white underline underline-offset-4 rounded"
                 >
-                  {SITE.phone}
+                  {brand.phone}
                 </a>
               </li>
             )}
           </ul>
 
-          {!businessDetailsComplete && (
+          {!brand.complete && (
             <p className="mt-3 text-xs text-amber-300">
               {ka
-                ? '⚠️ რეკვიზიტები ჯერ შესავსებია (src/lib/site-config.ts).'
-                : '⚠️ Business details still to be filled in (src/lib/site-config.ts).'}
+                ? '⚠️ რეკვიზიტები შესავსებია — პარამეტრები → კომპანია.'
+                : '⚠️ Business details still to be filled in — Settings → Company.'}
             </p>
           )}
         </address>
@@ -108,7 +109,7 @@ export const SiteFooter: React.FC<SiteFooterProps> = ({
 
       <div className="border-t border-stone-800">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5 text-xs text-stone-400">
-          © {new Date().getFullYear()} {SITE.legalName}.{' '}
+          © {new Date().getFullYear()} {brand.legalName}.{' '}
           {ka ? 'ყველა უფლება დაცულია.' : 'All rights reserved.'}
         </div>
       </div>

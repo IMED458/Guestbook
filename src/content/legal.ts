@@ -1,6 +1,15 @@
-import { SITE } from '../lib/site-config.ts';
-
 export type LegalSlug = 'privacy' | 'terms' | 'refund' | 'cookies';
+
+/** Whoever is publishing this site — read from Settings at render time. */
+export interface LegalOperator {
+  productName: string;
+  legalName: string;
+  registrationNumber: string;
+  address: string;
+  email: string;
+  privacyEmail: string;
+  lastUpdated: string;
+}
 
 export interface LegalSection {
   heading: string;
@@ -14,13 +23,13 @@ export interface LegalDoc {
   sections: LegalSection[];
 }
 
-const operator = `${SITE.legalName} (${SITE.productName})`;
+
 
 /* ------------------------------------------------------------------ */
 /* Privacy policy                                                      */
 /* ------------------------------------------------------------------ */
 
-const privacyKa: LegalDoc = {
+const privacyKa = (SITE: LegalOperator): LegalDoc => ({
   title: 'კონფიდენციალურობის პოლიტიკა',
   summary:
     'ეს გვერდი განმარტავს, რა მონაცემებს ვაგროვებთ, რატომ, სად ინახება და როგორ გამოიყენოთ თქვენი უფლებები.',
@@ -28,7 +37,7 @@ const privacyKa: LegalDoc = {
     {
       heading: '1. ვინ არის მონაცემთა კონტროლერი',
       paragraphs: [
-        `თქვენი პერსონალური მონაცემების დამმუშავებელია ${operator}, მისამართი: ${SITE.address}, საიდენტიფიკაციო ნომერი: ${SITE.registrationNumber}.`,
+        `თქვენი პერსონალური მონაცემების დამმუშავებელია ${SITE.legalName} (${SITE.productName}), მისამართი: ${SITE.address}, საიდენტიფიკაციო ნომერი: ${SITE.registrationNumber}.`,
         `ნებისმიერ კითხვაზე ან მოთხოვნაზე დაგვიკავშირდით: ${SITE.privacyEmail}.`,
       ],
     },
@@ -97,9 +106,9 @@ const privacyKa: LegalDoc = {
       ],
     },
   ],
-};
+});
 
-const privacyEn: LegalDoc = {
+const privacyEn = (SITE: LegalOperator): LegalDoc => ({
   title: 'Privacy Policy',
   summary:
     'What we collect, why we collect it, where it is stored, and how you exercise your rights.',
@@ -107,7 +116,7 @@ const privacyEn: LegalDoc = {
     {
       heading: '1. Who controls your data',
       paragraphs: [
-        `Your personal data is controlled by ${operator}, ${SITE.address}, registration number ${SITE.registrationNumber}.`,
+        `Your personal data is controlled by ${SITE.legalName} (${SITE.productName}), ${SITE.address}, registration number ${SITE.registrationNumber}.`,
         `For any question or request, write to ${SITE.privacyEmail}.`,
       ],
     },
@@ -176,20 +185,20 @@ const privacyEn: LegalDoc = {
       ],
     },
   ],
-};
+});
 
 /* ------------------------------------------------------------------ */
 /* Terms and conditions                                                */
 /* ------------------------------------------------------------------ */
 
-const termsKa: LegalDoc = {
+const termsKa = (SITE: LegalOperator): LegalDoc => ({
   title: 'წესები და პირობები',
   summary: 'სერვისით სარგებლობის წესები, თქვენი და ჩვენი ვალდებულებები.',
   sections: [
     {
       heading: '1. ვინ ვართ',
       paragraphs: [
-        `${SITE.productName} ოპერირდება ${operator}-ის მიერ, მისამართი: ${SITE.address}, საიდენტიფიკაციო ნომერი: ${SITE.registrationNumber}, ელფოსტა: ${SITE.email}.`,
+        `${SITE.productName} ოპერირდება ${SITE.legalName} (${SITE.productName})-ის მიერ, მისამართი: ${SITE.address}, საიდენტიფიკაციო ნომერი: ${SITE.registrationNumber}, ელფოსტა: ${SITE.email}.`,
       ],
     },
     {
@@ -247,16 +256,16 @@ const termsKa: LegalDoc = {
       paragraphs: [`კითხვებისთვის: ${SITE.email}. ბოლო განახლება: ${SITE.lastUpdated}.`],
     },
   ],
-};
+});
 
-const termsEn: LegalDoc = {
+const termsEn = (SITE: LegalOperator): LegalDoc => ({
   title: 'Terms and Conditions',
   summary: 'The rules for using the service, and what each of us is responsible for.',
   sections: [
     {
       heading: '1. Who we are',
       paragraphs: [
-        `${SITE.productName} is operated by ${operator}, ${SITE.address}, registration number ${SITE.registrationNumber}, email ${SITE.email}.`,
+        `${SITE.productName} is operated by ${SITE.legalName} (${SITE.productName}), ${SITE.address}, registration number ${SITE.registrationNumber}, email ${SITE.email}.`,
       ],
     },
     {
@@ -312,13 +321,13 @@ const termsEn: LegalDoc = {
       paragraphs: [`Questions: ${SITE.email}. Last updated: ${SITE.lastUpdated}.`],
     },
   ],
-};
+});
 
 /* ------------------------------------------------------------------ */
 /* Refund policy                                                       */
 /* ------------------------------------------------------------------ */
 
-const refundKa: LegalDoc = {
+const refundKa = (SITE: LegalOperator): LegalDoc => ({
   title: 'თანხის დაბრუნების პოლიტიკა',
   summary:
     'ამჟამად სერვისი უფასოა და გადახდას არ იღებს. ეს პოლიტიკა განსაზღვრავს წესებს ფასიანი გეგმების ამოქმედების შემდეგ.',
@@ -364,9 +373,9 @@ const refundKa: LegalDoc = {
       ],
     },
   ],
-};
+});
 
-const refundEn: LegalDoc = {
+const refundEn = (SITE: LegalOperator): LegalDoc => ({
   title: 'Refund Policy',
   summary:
     'The service is currently free and takes no payments. This policy sets the rules that apply once paid plans launch.',
@@ -412,13 +421,13 @@ const refundEn: LegalDoc = {
       ],
     },
   ],
-};
+});
 
 /* ------------------------------------------------------------------ */
 /* Cookie policy                                                       */
 /* ------------------------------------------------------------------ */
 
-const cookiesKa: LegalDoc = {
+const cookiesKa = (SITE: LegalOperator): LegalDoc => ({
   title: 'ქუქიების პოლიტიკა',
   summary:
     'საიტი არ იყენებს სარეკლამო ან მესამე მხარის თვალთვალის ქუქიებს. ქვემოთ ჩამოთვლილია ყველაფერი, რასაც თქვენს ბრაუზერში ვინახავთ.',
@@ -465,9 +474,9 @@ const cookiesKa: LegalDoc = {
       ],
     },
   ],
-};
+});
 
-const cookiesEn: LegalDoc = {
+const cookiesEn = (SITE: LegalOperator): LegalDoc => ({
   title: 'Cookie Policy',
   summary:
     'This site uses no advertising and no third-party tracking cookies. Everything we store in your browser is listed below.',
@@ -514,14 +523,21 @@ const cookiesEn: LegalDoc = {
       ],
     },
   ],
-};
+});
 
-export const legalDocs: Record<LegalSlug, { ka: LegalDoc; en: LegalDoc }> = {
-  privacy: { ka: privacyKa, en: privacyEn },
-  terms: { ka: termsKa, en: termsEn },
-  refund: { ka: refundKa, en: refundEn },
-  cookies: { ka: cookiesKa, en: cookiesEn },
-};
+export function buildLegalDocs(
+  operator: LegalOperator
+): Record<LegalSlug, { ka: LegalDoc; en: LegalDoc }> {
+  return {
+    privacy: { ka: privacyKa(operator), en: privacyEn(operator) },
+    terms: { ka: termsKa(operator), en: termsEn(operator) },
+    refund: { ka: refundKa(operator), en: refundEn(operator) },
+    cookies: { ka: cookiesKa(operator), en: cookiesEn(operator) },
+  };
+}
+
+/** The slugs alone, for routing, with no operator details needed. */
+export const LEGAL_SLUGS: LegalSlug[] = ['privacy', 'terms', 'refund', 'cookies'];
 
 export const legalNavLabels: Record<LegalSlug, { ka: string; en: string }> = {
   privacy: { ka: 'კონფიდენციალურობა', en: 'Privacy' },

@@ -4,6 +4,7 @@ import App from './App.tsx';
 import { I18nProvider } from './lib/i18n.tsx';
 import { SessionProvider } from './lib/session.tsx';
 import { ToastProvider } from './components/ui/Toast.tsx';
+import { BrandingProvider } from './lib/branding.tsx';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
@@ -11,7 +12,9 @@ createRoot(document.getElementById('root')!).render(
     <I18nProvider>
       <SessionProvider>
         <ToastProvider>
-          <App />
+          <BrandingProvider>
+            <App />
+          </BrandingProvider>
         </ToastProvider>
       </SessionProvider>
     </I18nProvider>

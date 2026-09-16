@@ -17,13 +17,13 @@ import { SiteFooter } from './components/layout/SiteFooter.tsx';
 import { CookieBanner } from './components/common/CookieBanner.tsx';
 import { api } from './lib/api.ts';
 import { useI18n } from './lib/i18n.tsx';
-import { legalDocs, type LegalSlug } from './content/legal.ts';
+import { LEGAL_SLUGS, type LegalSlug } from './content/legal.ts';
 import { User, GuestBook } from './types.ts';
 
 type AppView = 'landing' | 'public' | 'dashboard' | 'legal' | 'login' | 'admin' | 'album' | 'client' | 'event';
 
 const isLegalSlug = (value: string): value is LegalSlug =>
-  Object.prototype.hasOwnProperty.call(legalDocs, value);
+  (LEGAL_SLUGS as string[]).includes(value);
 
 export default function App() {
   const { lang } = useI18n();
