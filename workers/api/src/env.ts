@@ -4,10 +4,11 @@ export interface Env {
   R2_BUCKET_NAME: string;
   AUTH_EMAIL_DOMAIN: string;
   ALLOWED_ORIGINS: string;
+  /** Not a secret: it is part of every dashboard and S3 endpoint URL. */
+  R2_ACCOUNT_ID: string;
 
   // secrets
   FIREBASE_SERVICE_ACCOUNT: string;
-  R2_ACCOUNT_ID: string;
   R2_ACCESS_KEY_ID: string;
   R2_SECRET_ACCESS_KEY: string;
   TURNSTILE_SECRET_KEY?: string;

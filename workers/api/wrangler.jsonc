@@ -15,6 +15,9 @@
     "FIREBASE_PROJECT_ID": "guestbook-40634",
     "R2_BUCKET_NAME": "guestbook-media",
     "AUTH_EMAIL_DOMAIN": "users.guestbook.local",
+    // Not a secret — it appears in every dashboard URL. Only the access key
+    // and its secret are withheld.
+    "R2_ACCOUNT_ID": "62994fa347bdc913d86498613cdc50c3",
     // Every origin allowed to call this Worker, comma separated.
     "ALLOWED_ORIGINS": "http://localhost:3000,https://imed458.github.io"
   },
@@ -32,13 +35,12 @@
   "kv_namespaces": [
     {
       "binding": "RATE_LIMIT",
-      "id": "REPLACE_WITH_KV_NAMESPACE_ID"
+      "id": "827392b253484e99a068b9b0a35257a4"
     }
   ]
 
   // Required secrets — set each with `wrangler secret put <NAME>`:
   //   FIREBASE_SERVICE_ACCOUNT   full service-account JSON, one line
-  //   R2_ACCOUNT_ID              Cloudflare account id
   //   R2_ACCESS_KEY_ID           R2 API token access key
   //   R2_SECRET_ACCESS_KEY       R2 API token secret
   //   TURNSTILE_SECRET_KEY       Turnstile secret (optional)

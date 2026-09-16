@@ -38,22 +38,20 @@ Bucket **პრივატული რჩება**. საჯარო წ�
 
 ### 1.4 CORS
 
-ბრაუზერი პირდაპირ R2-ს წერს, ამიტომ bucket-მა ჩვენი origin უნდა დაუშვას.
+ბრაუზერი პირდაპირ R2-ს წერს, ამიტომ bucket-მა ჩვენი origin უნდა დაუშვას:
 
-დაშბორდი → R2 → `guestbook-media` → **Settings** → **CORS Policy** → *Add CORS policy*
-და ჩასვი [`workers/api/r2-cors.json`](workers/api/r2-cors.json)-ის შიგთავსი:
-
-```json
-[
-  {
-    "AllowedOrigins": ["http://localhost:3000", "https://imed458.github.io"],
-    "AllowedMethods": ["GET", "PUT", "HEAD"],
-    "AllowedHeaders": ["content-type"],
-    "ExposeHeaders": ["ETag"],
-    "MaxAgeSeconds": 3600
-  }
-]
+```bash
+npx wrangler r2 bucket cors set guestbook-media --file ./r2-cors.json
 ```
+
+გადამოწმება:
+
+```bash
+npx wrangler r2 bucket cors list guestbook-media
+```
+
+> R2 API `{ "rules": [...] }` ფორმას ითხოვს — არა S3-ის ბრტყელ მასივს.
+> [`r2-cors.json`](workers/api/r2-cors.json) სწორ ფორმაშია.
 
 > `ExposeHeaders: ["ETag"]` **აუცილებელია**. multipart ატვირთვის დასრულებას
 > თითოეული ნაწილის ETag სჭირდება; მის გარეშე დიდი ვიდეო ბოლო ნაბიჯზე ჩავარდება.
@@ -79,8 +77,9 @@ Bucket **პრივატული რჩება**. საჯარო წ�
 npx wrangler kv namespace create RATE_LIMIT
 ```
 
-დააბრუნებს `id`-ს. ჩასვი [`workers/api/wrangler.jsonc`](workers/api/wrangler.jsonc)-ში,
-`REPLACE_WITH_KV_NAMESPACE_ID`-ის ნაცვლად.
+დააბრუნებს `id`-ს — ჩასვი [`workers/api/wrangler.jsonc`](workers/api/wrangler.jsonc)-ში.
+
+> ამ პროექტში უკვე შექმნილია და კონფიგშია ჩასმული.
 
 ### 1.7 Secrets
 
