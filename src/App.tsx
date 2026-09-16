@@ -9,6 +9,7 @@ import { AdminRouter } from './pages/admin/AdminRouter.tsx';
 import { AlbumUploadPage } from './pages/public/AlbumUploadPage.tsx';
 import { ClientDashboard } from './pages/client/ClientDashboard.tsx';
 import { EventLandingPage } from './pages/public/EventLandingPage.tsx';
+import { OrderRequestPage } from './pages/public/OrderRequestPage.tsx';
 
 
 import { LegalPage } from './components/legal/LegalPage.tsx';
@@ -20,7 +21,7 @@ import { LEGAL_SLUGS, type LegalSlug } from './content/legal.ts';
 import { navigate } from './lib/routes.ts';
 import { User, GuestBook } from './types.ts';
 
-type AppView = 'landing' | 'public' | 'dashboard' | 'legal' | 'login' | 'admin' | 'album' | 'client' | 'event';
+type AppView = 'landing' | 'public' | 'dashboard' | 'legal' | 'login' | 'admin' | 'album' | 'client' | 'event' | 'request';
 
 const isLegalSlug = (value: string): value is LegalSlug =>
   (LEGAL_SLUGS as string[]).includes(value);
@@ -48,6 +49,11 @@ export default function App() {
     // out beside it.
     if (hash === 'login') {
       setCurrentView('login');
+      return;
+    }
+
+    if (hash === 'request') {
+      setCurrentView('request');
       return;
     }
 
@@ -191,6 +197,10 @@ export default function App() {
 
   if (currentView === 'login') {
     return <LoginPage />;
+  }
+
+  if (currentView === 'request') {
+    return <OrderRequestPage />;
   }
 
   if (currentView === 'admin') {

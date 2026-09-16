@@ -5,6 +5,7 @@ import { PAYMENT_METHODS } from '../../domain/models.ts';
 import { PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_TONE } from '../../domain/labels.ts';
 import { orderService, paymentService } from '../../services/orderService.ts';
 import { clientService } from '../../services/clientService.ts';
+import { activityService } from '../../services/systemService.ts';
 import { formatGel, parseLariInput } from '../../domain/money.ts';
 import { formatDateShort, toDateInputValue } from '../../domain/dates.ts';
 import { downloadBlob } from '../../lib/download.ts';
@@ -132,6 +133,14 @@ export const PaymentsPage: React.FC = () => {
         { orderId: order.id, clientId: order.clientId, amount: value, method: payMethod, paidAt, note },
         user?.id || ''
       );
+      void activityService.record({
+        actorUserId: user?.id || '',
+        actorName: `${user?.firstName} ${user?.lastName}`.trim() || user?.username || '',
+        action: 'payment.added',
+        entityType: 'order',
+        entityId: order.id,
+        metadata: { orderNumber: order.orderNumber, amount: value, method: payMethod },
+      });
       toast.success('გადახდა დაფიქსირდა');
       setAddOpen(false);
       setAmount('');
@@ -150,6 +159,14 @@ export const PaymentsPage: React.FC = () => {
     setBusy(true);
     try {
       await paymentService.remove(removing);
+      void activityService.record({
+        actorUserId: user?.id || '',
+        actorName: `${user?.firstName} ${user?.lastName}`.trim() || user?.username || '',
+        action: 'payment.removed',
+        entityType: 'order',
+        entityId: removing.orderId,
+        metadata: { amount: removing.amount },
+      });
       toast.success('გადახდა წაიშალა და ბალანსი დაბრუნდა');
       setRemoving(null);
       await load();

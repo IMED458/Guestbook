@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import type { Env } from '../env.ts';
 import { bearerToken, requirePermission, verifyIdToken, type VerifiedToken } from '../auth.ts';
-import { HttpError, deleteDocument, getDocument } from '../google.ts';
+import { HttpError, deleteDocument, getDocument, writeDocument } from '../google.ts';
 import { deleteObject, presignGet, previewKeyFor } from '../r2.ts';
 
 interface MediaDoc {
@@ -13,6 +13,17 @@ interface MediaDoc {
   albumId?: string;
   storageProvider?: string;
   url?: string;
+  kind?: 'IMAGE' | 'VIDEO';
+  fileSize?: number;
+}
+
+interface AlbumDoc {
+  stats?: {
+    fileCount?: number;
+    imageCount?: number;
+    videoCount?: number;
+    totalBytes?: number;
+  };
 }
 
 /** A client may reach their own media; staff need the matching permission. */
@@ -69,6 +80,26 @@ mediaRoutes.delete('/:id', async (c) => {
   }
 
   await deleteDocument(c.env, `albumMedia/${id}`);
+
+  // Take the album's counters back down, clamped at zero so a double delete
+  // or an older row written before counting existed cannot go negative.
+  if (media.albumId) {
+    try {
+      const album = await getDocument<AlbumDoc>(c.env, `albums/${media.albumId}`);
+      const stats = album?.stats || {};
+      await writeDocument(c.env, `albums/${media.albumId}`, {
+        stats: {
+          fileCount: Math.max(0, (stats.fileCount || 0) - 1),
+          imageCount: Math.max(0, (stats.imageCount || 0) - (media.kind === 'IMAGE' ? 1 : 0)),
+          videoCount: Math.max(0, (stats.videoCount || 0) - (media.kind === 'VIDEO' ? 1 : 0)),
+          totalBytes: Math.max(0, (stats.totalBytes || 0) - (media.fileSize || 0)),
+        },
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      failures.push(`stats: ${String(err)}`);
+    }
+  }
 
   return c.json({ ok: true, storageWarnings: failures });
 });

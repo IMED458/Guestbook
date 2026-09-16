@@ -5,6 +5,7 @@ import { EVENT_STATUS_LABELS, EVENT_TYPE_LABELS } from '../../domain/labels.ts';
 import { formatDateShort, toDateInputValue } from '../../domain/dates.ts';
 import { eventService, type EventInput } from '../../services/eventService.ts';
 import { clientService } from '../../services/clientService.ts';
+import { activityService } from '../../services/systemService.ts';
 import { matchesSearch } from '../../services/firestoreHelpers.ts';
 import { useSession } from '../../lib/session.tsx';
 import { publicAlbumUrl, publicEventUrl, publicGuestBookUrl } from '../../lib/urls.ts';
@@ -84,6 +85,14 @@ export const EventsPage: React.FC = () => {
     setFormError(null);
     try {
       const created = await eventService.create(form as EventInput, user?.id || '');
+      void activityService.record({
+        actorUserId: user?.id || '',
+        actorName: `${user?.firstName} ${user?.lastName}`.trim() || user?.username || '',
+        action: 'event.created',
+        entityType: 'event',
+        entityId: created.id,
+        metadata: { title: created.title, guestbook: created.hasGuestbook, album: created.hasAlbum },
+      });
       toast.success('ღონისძიება შეიქმნა');
       setFormOpen(false);
       await load();

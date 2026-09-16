@@ -25,6 +25,7 @@ const MULTIPART_THRESHOLD = 16 * 1024 * 1024;
 interface AlbumDoc {
   clientId: string;
   eventId: string;
+  stats?: AlbumStats;
   limits?: {
     uploadEnabled?: boolean;
     allowImages?: boolean;
@@ -33,8 +34,53 @@ interface AlbumDoc {
     storageQuota?: number;
     expiresAt?: string | null;
   };
-  stats?: { totalBytes?: number };
   archivedAt?: string | null;
+}
+
+interface AlbumStats {
+  fileCount?: number;
+  imageCount?: number;
+  videoCount?: number;
+  totalBytes?: number;
+  lastUploadAt?: string | null;
+}
+
+/**
+ * Roll the album's running totals forward after a file lands.
+ *
+ * These drive the gallery header, the client's cabinet and the quota check
+ * that decides whether the next upload is allowed — so without this the
+ * counters read zero forever and the quota never engages.
+ *
+ * Counting the media rows on each upload would be correct but costs a query
+ * per file; a wedding album takes hundreds. Best-effort increments are
+ * accurate in practice and cheap.
+ */
+async function bumpAlbumStats(
+  env: Env,
+  albumId: string,
+  kind: 'IMAGE' | 'VIDEO',
+  bytes: number
+): Promise<void> {
+  try {
+    const album = await getDocument<AlbumDoc>(env, `albums/${albumId}`);
+    const stats = album?.stats || {};
+
+    await writeDocument(env, `albums/${albumId}`, {
+      stats: {
+        fileCount: (stats.fileCount || 0) + 1,
+        imageCount: (stats.imageCount || 0) + (kind === 'IMAGE' ? 1 : 0),
+        videoCount: (stats.videoCount || 0) + (kind === 'VIDEO' ? 1 : 0),
+        totalBytes: (stats.totalBytes || 0) + bytes,
+        lastUploadAt: new Date().toISOString(),
+      },
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    // The file is already stored and its metadata written; a stale counter
+    // must not turn a successful upload into a failure.
+    console.error('could not update album stats', err);
+  }
 }
 
 interface GuestbookDoc {
@@ -247,6 +293,10 @@ uploadRoutes.post('/multipart/complete', async (c) => {
     uploadedAt: new Date().toISOString(),
   });
 
+  if (input.albumId) {
+    await bumpAlbumStats(c.env, input.albumId, target.kind, input.fileSize);
+  }
+
   return c.json({ mediaId, objectKey: input.objectKey });
 });
 
@@ -288,6 +338,10 @@ uploadRoutes.post('/finalize', async (c) => {
     status: 'READY',
     uploadedAt: new Date().toISOString(),
   });
+
+  if (input.albumId) {
+    await bumpAlbumStats(c.env, input.albumId, target.kind, head.size);
+  }
 
   return c.json({ mediaId, objectKey: input.objectKey, fileSize: head.size });
 });

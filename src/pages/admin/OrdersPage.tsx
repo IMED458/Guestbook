@@ -14,6 +14,7 @@ import { formatDateShort, toDateInputValue } from '../../domain/dates.ts';
 import { orderService } from '../../services/orderService.ts';
 import { clientService } from '../../services/clientService.ts';
 import { catalogService } from '../../services/catalogService.ts';
+import { activityService } from '../../services/systemService.ts';
 import { matchesSearch, newId } from '../../services/firestoreHelpers.ts';
 import { useSession } from '../../lib/session.tsx';
 import { navigate } from '../../lib/routes.ts';
@@ -160,7 +161,7 @@ export const OrdersPage: React.FC = () => {
     setSaving(true);
     setFormError(null);
     try {
-      await orderService.create(
+      const created = await orderService.create(
         {
           clientId,
           customerName: client.displayName,
@@ -173,6 +174,16 @@ export const OrdersPage: React.FC = () => {
         },
         user?.id || ''
       );
+
+      void activityService.record({
+        actorUserId: user?.id || '',
+        actorName: `${user?.firstName} ${user?.lastName}`.trim() || user?.username || '',
+        action: 'order.created',
+        entityType: 'order',
+        entityId: created.id,
+        metadata: { orderNumber: created.orderNumber, total: created.total },
+      });
+
       toast.success('შეკვეთა შეიქმნა');
       setFormOpen(false);
       await load();
@@ -187,6 +198,14 @@ export const OrdersPage: React.FC = () => {
   const changeStatus = async (order: Order, status: OrderStatus) => {
     try {
       await orderService.setStatus(order.id, status);
+      void activityService.record({
+        actorUserId: user?.id || '',
+        actorName: `${user?.firstName} ${user?.lastName}`.trim() || user?.username || '',
+        action: 'order.status_changed',
+        entityType: 'order',
+        entityId: order.id,
+        metadata: { orderNumber: order.orderNumber, status },
+      });
       toast.success(`სტატუსი: ${ORDER_STATUS_LABELS[status]}`);
       await load();
     } catch (err) {

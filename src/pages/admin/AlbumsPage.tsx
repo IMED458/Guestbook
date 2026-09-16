@@ -3,6 +3,7 @@ import { Download, Images, Lock, LockOpen, Search, Trash2, Video } from 'lucide-
 import type { Album, Client, MediaRecord } from '../../domain/models.ts';
 import { albumService } from '../../services/eventService.ts';
 import { clientService } from '../../services/clientService.ts';
+import { activityService } from '../../services/systemService.ts';
 import { formatBytes, mediaService } from '../../services/mediaService.ts';
 import { matchesSearch } from '../../services/firestoreHelpers.ts';
 import { formatDateShort } from '../../domain/dates.ts';
@@ -17,7 +18,7 @@ import { useToast } from '../../components/ui/Toast.tsx';
 type Filter = 'ALL' | 'IMAGE' | 'VIDEO';
 
 export const AlbumsPage: React.FC = () => {
-  const { can } = useSession();
+  const { user, can } = useSession();
   const toast = useToast();
 
   const [albums, setAlbums] = useState<Album[] | null>(null);
@@ -114,6 +115,14 @@ export const AlbumsPage: React.FC = () => {
     setBusy(true);
     try {
       await mediaService.remove(removing.id);
+      void activityService.record({
+        actorUserId: user?.id || '',
+        actorName: `${user?.firstName} ${user?.lastName}`.trim() || user?.username || '',
+        action: 'media.deleted',
+        entityType: 'media',
+        entityId: removing.id,
+        metadata: { name: removing.originalName, album: removing.albumId || null },
+      });
       toast.success('ფაილი წაიშალა');
       setMedia((prev) => (prev || []).filter((m) => m.id !== removing.id));
       setRemoving(null);
