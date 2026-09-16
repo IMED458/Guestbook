@@ -4,6 +4,7 @@ import type { Order, OrderItem, OrderStatus, Payment, PaymentMethod, Tetri } fro
 import { calculateOrderTotals, formatOrderNumber, withLineTotals } from '../domain/orders.ts';
 import {
   byNewest,
+  clean,
   createOne,
   getOne,
   listWhere,
@@ -204,8 +205,10 @@ export const paymentService = {
         (order.paidAmount || 0) + input.amount
       );
 
+      // Firestore rejects `undefined`; an absent note has to become null.
+      // The helper does this for ordinary writes, but a transaction bypasses it.
       const { id: _omit, ...paymentData } = payment;
-      tx.set(doc(db, PAYMENTS, paymentId), paymentData as unknown as Record<string, unknown>);
+      tx.set(doc(db, PAYMENTS, paymentId), clean(paymentData as unknown as Record<string, unknown>));
       tx.update(orderRef, {
         paidAmount: totals.paidAmount,
         balance: totals.balance,
