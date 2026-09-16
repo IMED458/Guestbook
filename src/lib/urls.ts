@@ -23,3 +23,8 @@ export function publicAlbumUrl(slug: string): string {
 export function publicEventUrl(slug: string): string {
   return `${publicBase()}#/e/${slug}`;
 }
+
+/** Where a client signs in to their own cabinet. */
+export function loginUrl(): string {
+  return `${publicBase()}#/login`;
+}

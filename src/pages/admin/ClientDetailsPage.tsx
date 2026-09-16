@@ -63,6 +63,9 @@ export const ClientDetailsPage: React.FC<{ clientId: string }> = ({ clientId }) 
   const [credentials, setCredentials] = useState<{ username: string; password: string } | null>(null);
 
   const [emailOpen, setEmailOpen] = useState(false);
+  /** Carried into the composer so a fresh password can be written into it. */
+  const [emailCredentials, setEmailCredentials] = useState<{ username: string; password: string } | null>(null);
+  const [emailTemplate, setEmailTemplate] = useState<string | undefined>(undefined);
 
   const load = useCallback(async () => {
     setError(null);
@@ -192,7 +195,15 @@ export const ClientDetailsPage: React.FC<{ clientId: string }> = ({ clientId }) 
         action={
           <div className="flex flex-wrap gap-2">
             {client.email && can('emails.send') && (
-              <button type="button" onClick={() => setEmailOpen(true)} className={`${secondaryButton} inline-flex items-center gap-1.5`}>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmailCredentials(null);
+                  setEmailTemplate(undefined);
+                  setEmailOpen(true);
+                }}
+                className={`${secondaryButton} inline-flex items-center gap-1.5`}
+              >
                 <Mail className="w-3.5 h-3.5" aria-hidden="true" />
                 წერილის გაგზავნა
               </button>
@@ -477,14 +488,42 @@ export const ClientDetailsPage: React.FC<{ clientId: string }> = ({ clientId }) 
         </div>
       </Modal>
 
-      <CredentialsModal credentials={credentials} onClose={() => setCredentials(null)} />
+      <CredentialsModal
+        credentials={credentials}
+        recipient={client.email}
+        onClose={() => setCredentials(null)}
+        onSendEmail={() => {
+          // Pick the template that matches what this client actually has, so
+          // the letter carries the right links alongside the login.
+          const hasBook = events.some((e) => e.hasGuestbook);
+          const hasAlbum = events.some((e) => e.hasAlbum);
+          setEmailTemplate(
+            hasBook && hasAlbum
+              ? 'both_ready_with_login'
+              : hasAlbum
+                ? 'album_ready_with_login'
+                : hasBook
+                  ? 'guestbook_ready_with_login'
+                  : 'credentials'
+          );
+          setEmailCredentials(credentials);
+          setCredentials(null);
+          setEmailOpen(true);
+        }}
+      />
 
       <QuickEmailModal
         isOpen={emailOpen}
-        onClose={() => setEmailOpen(false)}
+        onClose={() => {
+          setEmailOpen(false);
+          setEmailCredentials(null);
+          setEmailTemplate(undefined);
+        }}
         client={client}
         orders={orders}
         events={events}
+        defaultTemplateKey={emailTemplate}
+        credentials={emailCredentials}
         onSent={load}
       />
     </div>

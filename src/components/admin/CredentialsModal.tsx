@@ -1,6 +1,6 @@
 import React from 'react';
-import { Copy } from 'lucide-react';
-import { Modal, primaryButton } from '../ui/Modal.tsx';
+import { Copy, Mail } from 'lucide-react';
+import { Modal, primaryButton, secondaryButton } from '../ui/Modal.tsx';
 import { useToast } from '../ui/Toast.tsx';
 
 /**
@@ -11,7 +11,14 @@ import { useToast } from '../ui/Toast.tsx';
 export const CredentialsModal: React.FC<{
   credentials: { username: string; password: string } | null;
   onClose: () => void;
-}> = ({ credentials, onClose }) => {
+  /**
+   * Offered when we know where to write. Sending has to happen from here,
+   * while the password is still in memory — a minute later there is nowhere
+   * left to read it from.
+   */
+  onSendEmail?: () => void;
+  recipient?: string;
+}> = ({ credentials, onClose, onSendEmail, recipient }) => {
   const toast = useToast();
 
   const copy = (label: string, value: string) => {
@@ -25,9 +32,21 @@ export const CredentialsModal: React.FC<{
       title="ანგარიშის მონაცემები"
       onClose={onClose}
       footer={
-        <button type="button" className={primaryButton} onClick={onClose}>
-          დავიმახსოვრე
-        </button>
+        <>
+          {onSendEmail && recipient && (
+            <button
+              type="button"
+              className={`${secondaryButton} inline-flex items-center gap-1.5`}
+              onClick={onSendEmail}
+            >
+              <Mail className="w-3.5 h-3.5" aria-hidden="true" />
+              ელფოსტით გაგზავნა
+            </button>
+          )}
+          <button type="button" className={primaryButton} onClick={onClose}>
+            დავიმახსოვრე
+          </button>
+        </>
       }
     >
       <div className="space-y-4">
@@ -58,10 +77,17 @@ export const CredentialsModal: React.FC<{
           ))}
         </dl>
 
-        <p className="text-[11px] text-stone-600 leading-relaxed">
-          წერილით გასაგზავნად გამოიყენეთ „ანგარიშის მონაცემები“ თარგი — პაროლი
-          იქ ხელით ჩაისმება, სისტემა მას არსად არ ინახავს.
-        </p>
+        {onSendEmail && recipient ? (
+          <p className="text-[11px] text-stone-600 leading-relaxed">
+            „ელფოსტით გაგზავნა“ თარგში პაროლს ავტომატურად ჩასვამს და
+            <strong className="font-semibold"> {recipient}</strong>-ს გაუგზავნის.
+            შეგიძლიათ ბმულებიც იმავე წერილში დაურთოთ.
+          </p>
+        ) : (
+          <p className="text-[11px] text-stone-600 leading-relaxed">
+            ამ კლიენტს ელფოსტა მითითებული არ აქვს — პაროლი ხელით გადაეცით.
+          </p>
+        )}
       </div>
     </Modal>
   );

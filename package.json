@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "create-super-admin": "node scripts/create-super-admin.mjs",
-    "publish-rules": "node scripts/publish-rules.mjs"
+    "publish-rules": "node scripts/publish-rules.mjs",
+    "reset-data": "node scripts/reset-data.mjs"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

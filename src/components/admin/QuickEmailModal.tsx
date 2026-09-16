@@ -4,7 +4,7 @@ import type { Client, EventRecord, Order } from '../../domain/models.ts';
 import { emailConfigured, emailService, fillTemplate, templateVariables } from '../../services/emailService.ts';
 import { templateStore, type StoredTemplate } from '../../services/templateService.ts';
 import { formatGel } from '../../domain/money.ts';
-import { publicAlbumUrl, publicGuestBookUrl } from '../../lib/urls.ts';
+import { loginUrl, publicAlbumUrl, publicEventUrl, publicGuestBookUrl } from '../../lib/urls.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Field, inputClass } from '../ui/Field.tsx';
 import { Modal, primaryButton, secondaryButton } from '../ui/Modal.tsx';
@@ -24,8 +24,14 @@ export const QuickEmailModal: React.FC<{
   /** Preselect a template, e.g. "order ready" from the order page. */
   defaultTemplateKey?: string;
   defaultOrderId?: string;
+  /**
+   * A freshly issued login, held in memory only. Nothing stores a password,
+   * so this is the one moment it can be put into a letter — after the modal
+   * closes it is gone for good.
+   */
+  credentials?: { username: string; password: string } | null;
   onSent?: () => void;
-}> = ({ isOpen, onClose, client, orders = [], events = [], defaultTemplateKey, defaultOrderId, onSent }) => {
+}> = ({ isOpen, onClose, client, orders = [], events = [], defaultTemplateKey, defaultOrderId, credentials, onSent }) => {
   const { user } = useSession();
   const toast = useToast();
 
@@ -53,7 +59,8 @@ export const QuickEmailModal: React.FC<{
   }, [templateKey, templates]);
 
   const order = orders.find((o) => o.id === orderId);
-  const event = events[0];
+  const [eventId, setEventId] = useState('');
+  const event = events.find((e) => e.id === eventId) || events[0];
 
   const variables = useMemo<Record<string, string>>(
     () => ({
@@ -64,9 +71,13 @@ export const QuickEmailModal: React.FC<{
       courier_info: order?.courierInfo || '',
       guestbook_url: event?.hasGuestbook ? publicGuestBookUrl(event.slug) : '',
       album_url: event?.hasAlbum ? publicAlbumUrl(event.slug) : '',
+      event_url: event ? publicEventUrl(event.slug) : '',
       event_title: event?.title || '',
+      login_url: loginUrl(),
+      username: credentials?.username || '',
+      temporary_password: credentials?.password || '',
     }),
-    [client, order, event]
+    [client, order, event, credentials]
   );
 
   const previewSubject = fillTemplate(subject, variables);
@@ -139,6 +150,16 @@ export const QuickEmailModal: React.FC<{
             )}
           </Field>
 
+          {events.length > 1 && (
+            <Field id="qe-event" label="ღონისძიება">
+              {() => (
+                <select id="qe-event" value={event?.id || ''} onChange={(e) => setEventId(e.target.value)} className={inputClass}>
+                  {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.title}</option>)}
+                </select>
+              )}
+            </Field>
+          )}
+
           {orders.length > 0 && (
             <Field id="qe-order" label="შეკვეთა">
               {() => (
@@ -172,8 +193,15 @@ export const QuickEmailModal: React.FC<{
         </div>
 
         {unresolved.length > 0 && (
-          <p role="status" className="text-[11px] text-amber-800">
+          <p role="status" className="text-[11px] text-amber-800 leading-relaxed">
             შეუვსებელი: {unresolved.map((v) => `{{${v}}}`).join(', ')}
+            {unresolved.includes('temporary_password') && (
+              <>
+                {' — '}პაროლი მხოლოდ ანგარიშის შექმნის ან პაროლის შეცვლის მომენტში
+                ჩაისმება, რადგან სისტემა მას არსად არ ინახავს. გამოიყენეთ
+                „პაროლის შეცვლა“ და იქიდან გააგზავნეთ.
+              </>
+            )}
           </p>
         )}
       </div>

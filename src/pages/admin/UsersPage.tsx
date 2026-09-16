@@ -21,6 +21,8 @@ import { Modal, primaryButton, secondaryButton } from '../../components/ui/Modal
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog.tsx';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/DataState.tsx';
 import { useToast } from '../../components/ui/Toast.tsx';
+import { CredentialsModal } from '../../components/admin/CredentialsModal.tsx';
+import { QuickEmailModal } from '../../components/admin/QuickEmailModal.tsx';
 
 const USERNAME_HINTS: Record<string, string> = {
   'username.tooShort': 'მინიმუმ 3 სიმბოლო',
@@ -61,9 +63,12 @@ export const UsersPage: React.FC = () => {
 
   /** Shown once, straight after creation — never stored, never shown again. */
   const [credentials, setCredentials] = useState<{ username: string; password: string } | null>(null);
+  /** Which client the shown credentials belong to, so we know where to write. */
+  const [credentialsClient, setCredentialsClient] = useState<Client | null>(null);
 
   const [resetting, setResetting] = useState<AppUser | null>(null);
   const [resetPassword, setResetPassword] = useState('');
+  const [emailFor, setEmailFor] = useState<{ client: Client; credentials: { username: string; password: string } } | null>(null);
   const [removing, setRemoving] = useState<AppUser | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -160,6 +165,7 @@ export const UsersPage: React.FC = () => {
       } else {
         await userService.create(payload, password);
         setCredentials({ username, password });
+        setCredentialsClient(clients.find((c) => c.id === payload.clientId) || null);
         toast.success('მომხმარებელი შეიქმნა');
       }
       setFormOpen(false);
@@ -181,6 +187,7 @@ export const UsersPage: React.FC = () => {
     try {
       await userService.resetPassword(resetting.id, resetPassword);
       setCredentials({ username: resetting.username, password: resetPassword });
+      setCredentialsClient(clients.find((c) => c.id === resetting.clientId) || null);
       toast.success('პაროლი შეიცვალა');
       setResetting(null);
       await load();
@@ -545,49 +552,27 @@ export const UsersPage: React.FC = () => {
         </div>
       </Modal>
 
-      {/* The one time credentials are ever shown ----------------------- */}
-      <Modal
-        isOpen={credentials !== null}
-        title="ანგარიშის მონაცემები"
+      <CredentialsModal
+        credentials={credentials}
+        recipient={credentialsClient?.email}
         onClose={() => setCredentials(null)}
-        footer={
-          <button type="button" className={primaryButton} onClick={() => setCredentials(null)}>
-            დავიმახსოვრე
-          </button>
-        }
-      >
-        <div className="space-y-4">
-          <p className="text-[13px] text-stone-700 leading-relaxed">
-            ეს პაროლი მხოლოდ ახლა ჩანს — სისტემა მას არ ინახავს და ხელახლა ვერ გაჩვენებთ.
-            გადაეცით მომხმარებელს და შენახეთ უსაფრთხოდ.
-          </p>
+        onSendEmail={() => {
+          if (credentialsClient && credentials) {
+            setEmailFor({ client: credentialsClient, credentials });
+          }
+          setCredentials(null);
+        }}
+      />
 
-          <dl className="rounded-lg border border-stone-200 bg-stone-50 divide-y divide-stone-200">
-            {[
-              ['მომხმარებელი', credentials?.username || ''],
-              ['პაროლი', credentials?.password || ''],
-            ].map(([label, value]) => (
-              <div key={label} className="flex items-center justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <dt className="text-[11px] font-semibold uppercase tracking-wide text-stone-600">{label}</dt>
-                  <dd className="mt-0.5 font-mono text-sm text-stone-900 break-all">{value}</dd>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    void navigator.clipboard.writeText(value);
-                    toast.success(`${label} დაკოპირდა`);
-                  }}
-                  aria-label={`${label} — კოპირება`}
-                  className="shrink-0 p-1.5 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-200/70 cursor-pointer"
-                >
-                  <Copy className="w-3.5 h-3.5" aria-hidden="true" />
-                </button>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </Modal>
+      {emailFor && (
+        <QuickEmailModal
+          isOpen
+          onClose={() => setEmailFor(null)}
+          client={emailFor.client}
+          defaultTemplateKey="credentials"
+          credentials={emailFor.credentials}
+        />
+      )}
 
       {/* Password reset ------------------------------------------------ */}
       <Modal
