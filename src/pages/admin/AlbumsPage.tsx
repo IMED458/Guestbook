@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Download, Images, Lock, LockOpen, Search, Trash2, Video } from 'lucide-react';
+import { Archive, ArchiveRestore, Download, Images, Lock, LockOpen, Search, Trash2, Video } from 'lucide-react';
 import type { Album, Client, MediaRecord } from '../../domain/models.ts';
 import { albumService } from '../../services/eventService.ts';
 import { clientService } from '../../services/clientService.ts';
@@ -167,6 +167,31 @@ export const AlbumsPage: React.FC = () => {
             <a href={publicAlbumUrl(open.slug)} target="_blank" rel="noopener noreferrer" className={secondaryButton}>
               საჯარო გვერდი
             </a>
+            {can('albums.manage') && (
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    if (open.archivedAt) {
+                      await albumService.restore(open.id);
+                      toast.success('ალბომი აღდგა');
+                    } else {
+                      await albumService.archive(open.id);
+                      toast.success('ალბომი დაარქივდა — საჯარო გვერდი დაიხურა');
+                    }
+                    await load();
+                    setOpen({ ...open, archivedAt: open.archivedAt ? null : new Date().toISOString() });
+                  } catch (err) {
+                    console.error('album archive failed', err);
+                    toast.error('ოპერაცია ვერ შესრულდა');
+                  }
+                }}
+                className={`${secondaryButton} inline-flex items-center gap-1.5`}
+              >
+                {open.archivedAt ? <ArchiveRestore className="w-3.5 h-3.5" aria-hidden="true" /> : <Archive className="w-3.5 h-3.5" aria-hidden="true" />}
+                {open.archivedAt ? 'აღდგენა' : 'დაარქივება'}
+              </button>
+            )}
             {can('albums.manage') && (
               <button type="button" onClick={() => toggleUploads(open)} className={`${secondaryButton} inline-flex items-center gap-1.5`}>
                 {open.limits.uploadEnabled ? <Lock className="w-3.5 h-3.5" aria-hidden="true" /> : <LockOpen className="w-3.5 h-3.5" aria-hidden="true" />}

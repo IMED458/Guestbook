@@ -3,6 +3,7 @@ import { slugify } from '../lib/slug.ts';
 import {
   byNewest,
   createOne,
+  deleteOne,
   getOne,
   listWhere,
   newId,
@@ -166,6 +167,30 @@ export const eventService = {
 
   async update(id: string, input: Partial<EventInput> & { status?: EventStatus }): Promise<void> {
     await updateOne(EVENTS, id, input as Record<string, unknown>);
+  },
+
+  /**
+   * Remove an event together with the guest book and album it created.
+   *
+   * Uploaded files are not touched here: they live in R2 and are deleted
+   * through the Worker, which holds the storage credentials. Removing the
+   * event without them would leave paid-for storage occupied by objects
+   * nothing references, so the caller is told what remains.
+   */
+  async remove(event: EventRecord): Promise<{ orphanedMedia: boolean }> {
+    if (event.guestbookId) {
+      await deleteOne(GUESTBOOKS, event.guestbookId).catch(() => {});
+    }
+
+    let orphanedMedia = false;
+    if (event.albumId) {
+      const album = await getOne<Album>(ALBUMS, event.albumId);
+      orphanedMedia = (album?.stats?.fileCount || 0) > 0;
+      await deleteOne(ALBUMS, event.albumId).catch(() => {});
+    }
+
+    await deleteOne(EVENTS, event.id);
+    return { orphanedMedia };
   },
 
   /** Turning a product on after the fact creates it; turning it off only hides it. */

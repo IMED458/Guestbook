@@ -13,6 +13,8 @@ const ACTION_LABELS: Record<string, string> = {
   'payment.removed': 'გადახდა წაიშალა',
   'event.created': 'ღონისძიება შეიქმნა',
   'order.deleted': 'შეკვეთა წაიშალა',
+  'order.archived': 'შეკვეთა დაარქივდა',
+  'event.deleted': 'ღონისძიება წაიშალა',
   'payment.added': 'გადახდა დაემატა',
   'media.deleted': 'ფაილი წაიშალა',
   'email.sent': 'ელფოსტა გაიგზავნა',

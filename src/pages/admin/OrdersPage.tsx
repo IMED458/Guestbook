@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Plus, Search, Trash2 } from 'lucide-react';
+import { AlertTriangle, Archive, Plus, Search, Trash2 } from 'lucide-react';
 import type { CatalogItem, Client, Order, OrderItem, OrderStatus } from '../../domain/models.ts';
 import { ORDER_STATUSES } from '../../domain/models.ts';
 import {
@@ -21,6 +21,7 @@ import { navigate } from '../../lib/routes.ts';
 import { Field, inputClass } from '../../components/ui/Field.tsx';
 import { Modal, primaryButton, secondaryButton } from '../../components/ui/Modal.tsx';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/DataState.tsx';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog.tsx';
 import { useToast } from '../../components/ui/Toast.tsx';
 
 interface DraftItem {
@@ -57,7 +58,7 @@ function toOrderItems(drafts: DraftItem[]): OrderItem[] {
 }
 
 export const OrdersPage: React.FC = () => {
-  const { user, can } = useSession();
+  const { user, can, isSuperAdmin } = useSession();
   const toast = useToast();
 
   const [orders, setOrders] = useState<Order[] | null>(null);
@@ -77,6 +78,9 @@ export const OrdersPage: React.FC = () => {
   const [drafts, setDrafts] = useState<DraftItem[]>([blankItem()]);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  const [removing, setRemoving] = useState<{ order: Order; permanent: boolean } | null>(null);
+  const [removeBusy, setRemoveBusy] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -214,6 +218,36 @@ export const OrdersPage: React.FC = () => {
     }
   };
 
+  const confirmRemove = async () => {
+    if (!removing) return;
+    setRemoveBusy(true);
+    try {
+      if (removing.permanent) {
+        await orderService.destroy(removing.order.id);
+      } else {
+        await orderService.archive(removing.order.id);
+      }
+
+      void activityService.record({
+        actorUserId: user?.id || '',
+        actorName: `${user?.firstName} ${user?.lastName}`.trim() || user?.username || '',
+        action: removing.permanent ? 'order.deleted' : 'order.archived',
+        entityType: 'order',
+        entityId: removing.order.id,
+        metadata: { orderNumber: removing.order.orderNumber },
+      });
+
+      toast.success(removing.permanent ? 'შეკვეთა წაიშალა' : 'შეკვეთა დაარქივდა');
+      setRemoving(null);
+      await load();
+    } catch (err) {
+      console.error('order removal failed', err);
+      toast.error('ოპერაცია ვერ შესრულდა');
+    } finally {
+      setRemoveBusy(false);
+    }
+  };
+
   return (
     <div className="p-6 lg:p-8">
       <header className="flex flex-wrap items-start justify-between gap-4 mb-6">
@@ -295,6 +329,9 @@ export const OrdersPage: React.FC = () => {
                   <th scope="col" className="px-4 py-2.5 font-semibold text-stone-700">გადახდა</th>
                   <th scope="col" className="px-4 py-2.5 font-semibold text-stone-700">სტატუსი</th>
                   <th scope="col" className="px-4 py-2.5 font-semibold text-stone-700">დედლაინი</th>
+                  <th scope="col" className="px-4 py-2.5 font-semibold text-stone-700 text-right">
+                    <span className="sr-only">მოქმედება</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -351,6 +388,32 @@ export const OrdersPage: React.FC = () => {
                           <span className="text-stone-500">—</span>
                         )}
                       </td>
+                      <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1">
+                          {can('orders.delete') && (
+                            <button
+                              type="button"
+                              onClick={() => setRemoving({ order, permanent: false })}
+                              aria-label={`${order.orderNumber} — დაარქივება`}
+                              title="დაარქივება"
+                              className="p-1.5 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-100 cursor-pointer"
+                            >
+                              <Archive className="w-3.5 h-3.5" aria-hidden="true" />
+                            </button>
+                          )}
+                          {isSuperAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => setRemoving({ order, permanent: true })}
+                              aria-label={`${order.orderNumber} — სამუდამოდ წაშლა`}
+                              title="სამუდამოდ წაშლა"
+                              className="p-1.5 rounded-lg text-stone-600 hover:text-rose-700 hover:bg-rose-50 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -359,6 +422,20 @@ export const OrdersPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={removing !== null}
+        title={removing?.permanent ? 'შეკვეთის სამუდამოდ წაშლა' : 'შეკვეთის დაარქივება'}
+        message={
+          removing?.permanent
+            ? `${removing.order.orderNumber} და მასზე დაფიქსირებული გადახდები სამუდამოდ წაიშლება. ეს ქმედება შეუქცევადია.`
+            : `${removing?.order.orderNumber} სიიდან გაქრება, მაგრამ მონაცემები შენარჩუნდება და საჭიროებისას აღდგება.`
+        }
+        confirmLabel={removing?.permanent ? 'სამუდამოდ წაშლა' : 'დაარქივება'}
+        busy={removeBusy}
+        onConfirm={confirmRemove}
+        onCancel={() => setRemoving(null)}
+      />
 
       <Modal
         isOpen={formOpen}

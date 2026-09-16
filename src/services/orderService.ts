@@ -6,6 +6,7 @@ import {
   byNewest,
   clean,
   createOne,
+  deleteOne,
   getOne,
   listWhere,
   newId,
@@ -150,6 +151,26 @@ export const orderService = {
 
   async archive(id: string): Promise<void> {
     await updateOne(ORDERS, id, { deletedAt: nowIso() });
+  },
+
+  async restore(id: string): Promise<void> {
+    await updateOne(ORDERS, id, { deletedAt: null });
+  },
+
+  /**
+   * Permanent removal, together with the payments recorded against it.
+   * Leaving those behind would keep them in the payments totals while the
+   * order they belong to no longer exists.
+   */
+  async destroy(id: string): Promise<void> {
+    const payments = await listWhere<Payment>(PAYMENTS, [where('orderId', '==', id)]);
+    await Promise.all(payments.map((p) => deleteOne(PAYMENTS, p.id)));
+    await deleteOne(ORDERS, id);
+  },
+
+  async listArchived(): Promise<Order[]> {
+    const all = await listWhere<Order>(ORDERS);
+    return all.filter((o) => o.deletedAt).sort(byNewest());
   },
 };
 

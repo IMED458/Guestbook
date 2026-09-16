@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { BookHeart, Copy, ExternalLink, Images, Plus, Search } from 'lucide-react';
+import { BookHeart, Copy, ExternalLink, Images, Plus, Search, Trash2 } from 'lucide-react';
 import type { Client, EventRecord, EventType } from '../../domain/models.ts';
 import { EVENT_STATUS_LABELS, EVENT_TYPE_LABELS } from '../../domain/labels.ts';
 import { formatDateShort, toDateInputValue } from '../../domain/dates.ts';
@@ -12,6 +12,7 @@ import { publicAlbumUrl, publicEventUrl, publicGuestBookUrl } from '../../lib/ur
 import { Field, inputClass } from '../../components/ui/Field.tsx';
 import { Modal, primaryButton, secondaryButton } from '../../components/ui/Modal.tsx';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/DataState.tsx';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog.tsx';
 import { useToast } from '../../components/ui/Toast.tsx';
 
 const EVENT_TYPES = Object.keys(EVENT_TYPE_LABELS) as EventType[];
@@ -28,7 +29,7 @@ const emptyForm = {
 };
 
 export const EventsPage: React.FC = () => {
-  const { user, can } = useSession();
+  const { user, can, isSuperAdmin } = useSession();
   const toast = useToast();
 
   const [events, setEvents] = useState<EventRecord[] | null>(null);
@@ -42,6 +43,8 @@ export const EventsPage: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
 
   const [sharing, setSharing] = useState<EventRecord | null>(null);
+  const [removing, setRemoving] = useState<EventRecord | null>(null);
+  const [removeBusy, setRemoveBusy] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -102,6 +105,39 @@ export const EventsPage: React.FC = () => {
       setFormError('შენახვა ვერ მოხერხდა — შეამოწმეთ უფლებები');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const confirmRemove = async () => {
+    if (!removing) return;
+    setRemoveBusy(true);
+    try {
+      const { orphanedMedia } = await eventService.remove(removing);
+
+      void activityService.record({
+        actorUserId: user?.id || '',
+        actorName: `${user?.firstName} ${user?.lastName}`.trim() || user?.username || '',
+        action: 'event.deleted',
+        entityType: 'event',
+        entityId: removing.id,
+        metadata: { title: removing.title },
+      });
+
+      // Files live in R2 and are removed through the album gallery, which
+      // holds the storage credentials. Say so rather than leave paid-for
+      // storage silently occupied.
+      toast.success(
+        orphanedMedia
+          ? 'ღონისძიება წაიშალა — ატვირთული ფაილები საცავში დარჩა, წაშალეთ ალბომების გვერდიდან'
+          : 'ღონისძიება წაიშალა'
+      );
+      setRemoving(null);
+      await load();
+    } catch (err) {
+      console.error('event removal failed', err);
+      toast.error('წაშლა ვერ მოხერხდა');
+    } finally {
+      setRemoveBusy(false);
     }
   };
 
@@ -202,9 +238,21 @@ export const EventsPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button type="button" onClick={() => setSharing(event)} className={secondaryButton}>
-                        ბმულები და QR
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button type="button" onClick={() => setSharing(event)} className={`${secondaryButton} !py-1.5`}>
+                          ბმულები და QR
+                        </button>
+                        {(isSuperAdmin || can('events.manage')) && (
+                          <button
+                            type="button"
+                            onClick={() => setRemoving(event)}
+                            aria-label={`${event.title} — წაშლა`}
+                            className="p-1.5 rounded-lg text-stone-600 hover:text-rose-700 hover:bg-rose-50 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -213,6 +261,16 @@ export const EventsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={removing !== null}
+        title="ღონისძიების წაშლა"
+        message={`„${removing?.title}“ წაიშლება მასთან ერთად შექმნილი სტუმრების წიგნითა და ალბომით. საჯარო ბმულები გაუქმდება. ატვირთული ფაილები საცავში რჩება — მათ ალბომების გვერდიდან წაშლით.`}
+        confirmLabel="წაშლა"
+        busy={removeBusy}
+        onConfirm={confirmRemove}
+        onCancel={() => setRemoving(null)}
+      />
 
       <Modal
         isOpen={formOpen}
