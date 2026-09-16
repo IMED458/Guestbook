@@ -24,38 +24,20 @@ export interface NavSection {
 
 export const ADMIN_NAV: NavSection[] = [
   {
-    items: [{ label: 'მთავარი', pattern: 'admin', icon: 'LayoutDashboard' }],
-  },
-  {
-    title: 'გაყიდვები',
     items: [
+      { label: 'მიმოხილვა', pattern: 'admin', icon: 'LayoutDashboard' },
       { label: 'შეკვეთები', pattern: 'admin/orders', icon: 'ClipboardList', permission: 'orders.view' },
-      { label: 'ახალი მოთხოვნები', pattern: 'admin/requests', icon: 'Inbox', permission: 'requests.view' },
-      { label: 'გადახდები', pattern: 'admin/payments', icon: 'Wallet', permission: 'payments.view' },
-      { label: 'პროდუქტები და სერვისები', pattern: 'admin/catalog', icon: 'Package', permission: 'catalog.view' },
-    ],
-  },
-  {
-    title: 'ღონისძიებები',
-    items: [
+      { label: 'კლიენტები (CRM)', pattern: 'admin/clients', icon: 'Users', permission: 'clients.view' },
       { label: 'ღონისძიებები', pattern: 'admin/events', icon: 'CalendarDays', permission: 'events.view' },
-      { label: 'სტუმრების წიგნები', pattern: 'admin/guestbooks', icon: 'BookHeart', permission: 'guestbooks.view' },
       { label: 'ციფრული ალბომები', pattern: 'admin/albums', icon: 'Images', permission: 'albums.view' },
-      { label: 'QR დიზაინი', pattern: 'admin/qr', icon: 'QrCode', permission: 'events.view' },
-    ],
-  },
-  {
-    title: 'ხალხი',
-    items: [
-      { label: 'კლიენტები', pattern: 'admin/clients', icon: 'Users', permission: 'clients.view' },
-      { label: 'მომხმარებლები', pattern: 'admin/users', icon: 'UserCog', permission: 'users.view' },
-      { label: 'ელფოსტა', pattern: 'admin/email', icon: 'Mail', permission: 'emails.send' },
-    ],
-  },
-  {
-    title: 'სისტემა',
-    items: [
-      { label: 'აქტივობის ისტორია', pattern: 'admin/activity', icon: 'History', permission: 'activity.view' },
+      { label: 'სტუმრების წიგნები', pattern: 'admin/guestbooks', icon: 'BookHeart', permission: 'guestbooks.view' },
+      { label: 'QR სტუდია', pattern: 'admin/qr', icon: 'QrCode', permission: 'events.view' },
+      { label: 'პროდუქტები & ფასები', pattern: 'admin/catalog', icon: 'Package', permission: 'catalog.view' },
+      { label: 'გადახდები', pattern: 'admin/payments', icon: 'Wallet', permission: 'payments.view' },
+      { label: 'ონლაინ მოთხოვნები', pattern: 'admin/requests', icon: 'Inbox', permission: 'requests.view' },
+      { label: 'ელფოსტა & შაბლონები', pattern: 'admin/email', icon: 'Mail', permission: 'emails.send' },
+      { label: 'მომხმარებლები & როლები', pattern: 'admin/users', icon: 'UserCog', permission: 'users.view' },
+      { label: 'აქტივობის ლოგი', pattern: 'admin/activity', icon: 'History', permission: 'activity.view' },
       { label: 'პარამეტრები', pattern: 'admin/settings', icon: 'Settings', superAdminOnly: true },
     ],
   },
