@@ -187,3 +187,27 @@
     page-break-after: avoid;
   }
 }
+
+/* ---------------------------------------------------------------
+   Printed QR card
+   --------------------------------------------------------------- */
+
+@media print {
+  /* The card is sized for A6, which is the usual table-card format. */
+  body:has(.qr-card) {
+    background: #ffffff !important;
+  }
+
+  body:has(.qr-card) *:not(:has(.qr-card)):not(.qr-card):not(.qr-card *) {
+    display: none !important;
+  }
+
+  .qr-card {
+    width: 105mm !important;
+    height: 148mm !important;
+    max-width: none !important;
+    margin: 0 auto !important;
+    border-radius: 0 !important;
+    break-inside: avoid;
+  }
+}

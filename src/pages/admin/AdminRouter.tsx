@@ -10,6 +10,8 @@ import { UsersPage } from './UsersPage.tsx';
 import { EventsPage } from './EventsPage.tsx';
 import { OrdersPage } from './OrdersPage.tsx';
 import { OrderDetailsPage } from './OrderDetailsPage.tsx';
+import { AlbumsPage } from './AlbumsPage.tsx';
+import { QrStudioPage } from './QrStudioPage.tsx';
 
 /**
  * Chooses the back-office page for the current hash, after checking that the
@@ -77,6 +79,12 @@ export const AdminRouter: React.FC = () => {
         break;
       case 'admin/orders':
         page = <OrdersPage />;
+        break;
+      case 'admin/albums':
+        page = <AlbumsPage />;
+        break;
+      case 'admin/qr':
+        page = <QrStudioPage />;
         break;
       default:
         // Detail routes carry an id, so they are matched by pattern.
