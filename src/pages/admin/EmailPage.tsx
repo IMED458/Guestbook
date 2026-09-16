@@ -1,13 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Mail, Send } from 'lucide-react';
+import { Mail, Pencil, Plus, Send, Trash2 } from 'lucide-react';
 import type { Client, EmailLog, Order } from '../../domain/models.ts';
 import {
-  EMAIL_TEMPLATES,
   emailConfigured,
   emailService,
   fillTemplate,
   templateVariables,
 } from '../../services/emailService.ts';
+import { templateStore, type StoredTemplate } from '../../services/templateService.ts';
+import { Card, CardHeader, PageHeader } from '../../components/ui/Card.tsx';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog.tsx';
+import { Modal, secondaryButton } from '../../components/ui/Modal.tsx';
 import { clientService } from '../../services/clientService.ts';
 import { orderService } from '../../services/orderService.ts';
 import { formatGel } from '../../domain/money.ts';
@@ -25,6 +28,14 @@ export const EmailPage: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [logs, setLogs] = useState<EmailLog[] | null>(null);
+  const [templates, setTemplates] = useState<StoredTemplate[]>([]);
+
+  // Template editing
+  const [tab, setTab] = useState<'compose' | 'templates'>('compose');
+  const [editing, setEditing] = useState<StoredTemplate | null>(null);
+  const [draft, setDraft] = useState({ label: '', subject: '', body: '', emailjsTemplateId: '' });
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [deleting, setDeleting] = useState<StoredTemplate | null>(null);
 
   const [templateKey, setTemplateKey] = useState('order_ready');
   const [clientId, setClientId] = useState('');
@@ -36,14 +47,16 @@ export const EmailPage: React.FC = () => {
 
   const load = useCallback(async () => {
     try {
-      const [clientList, orderList, logList] = await Promise.all([
+      const [clientList, orderList, logList, templateList] = await Promise.all([
         clientService.list(),
         orderService.list(),
         emailService.listLogs().catch(() => []),
+        templateStore.list().catch(() => []),
       ]);
       setClients(clientList);
       setOrders(orderList);
       setLogs(logList);
+      setTemplates(templateList);
     } catch (err) {
       console.error('email page load failed', err);
       setLogs([]);
@@ -74,11 +87,11 @@ export const EmailPage: React.FC = () => {
 
   // Load the template's wording whenever the choice changes.
   useEffect(() => {
-    const template = EMAIL_TEMPLATES.find((t) => t.key === templateKey);
+    const template = templates.find((t) => t.key === templateKey);
     if (!template) return;
     setSubject(template.subject);
     setBody(template.body);
-  }, [templateKey]);
+  }, [templateKey, templates]);
 
   useEffect(() => {
     if (client?.email) setRecipient(client.email);
@@ -117,12 +130,88 @@ export const EmailPage: React.FC = () => {
     }
   };
 
+  const openTemplate = (template: StoredTemplate | null) => {
+    setEditing(template);
+    setDraft(
+      template
+        ? {
+            label: template.label,
+            subject: template.subject,
+            body: template.body,
+            emailjsTemplateId: template.emailjsTemplateId || '',
+          }
+        : { label: '', subject: '', body: '', emailjsTemplateId: '' }
+    );
+  };
+
+  const saveTemplate = async () => {
+    if (!draft.label.trim()) {
+      toast.error('თარგის სახელი სავალდებულოა');
+      return;
+    }
+    setSavingTemplate(true);
+    try {
+      await templateStore.save({
+        key: editing ? editing.key : templateStore.makeKey(draft.label, templates),
+        label: draft.label,
+        subject: draft.subject,
+        body: draft.body,
+        emailjsTemplateId: draft.emailjsTemplateId || undefined,
+        builtIn: editing?.builtIn ?? false,
+        sortOrder: editing?.sortOrder ?? templates.length,
+        id: editing?.id,
+      });
+      toast.success(editing ? 'თარგი განახლდა' : 'თარგი დაემატა');
+      setEditing(null);
+      setDraft({ label: '', subject: '', body: '', emailjsTemplateId: '' });
+      await load();
+    } catch (err) {
+      console.error('template save failed', err);
+      toast.error('შენახვა ვერ მოხერხდა');
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
+  const removeTemplate = async () => {
+    if (!deleting) return;
+    try {
+      await templateStore.remove(deleting);
+      toast.success('თარგი წაიშალა');
+      setDeleting(null);
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'წაშლა ვერ მოხერხდა');
+      setDeleting(null);
+    }
+  };
+
   return (
     <div className="p-6 lg:p-8">
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold text-stone-900">ელფოსტა</h1>
-        <p className="mt-1 text-sm text-stone-600">შეტყობინება კლიენტს, თარგიდან ან თავისუფლად</p>
-      </header>
+      <PageHeader
+        title="ელფოსტა"
+        subtitle="შეტყობინება კლიენტს, თარგიდან ან თავისუფლად"
+        action={
+          <div className="flex gap-1 rounded-xl border border-stone-300 bg-white p-1">
+            {([
+              ['compose', 'წერილი'],
+              ['templates', 'თარგები'],
+            ] as ['compose' | 'templates', string][]).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setTab(id)}
+                aria-pressed={tab === id}
+                className={`px-3.5 py-1.5 rounded-lg text-[13px] font-semibold cursor-pointer transition-colors ${
+                  tab === id ? 'bg-stone-900 text-white' : 'text-stone-700 hover:bg-stone-100'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        }
+      />
 
       {!emailConfigured && (
         <div role="alert" className="mb-5 rounded-xl border border-amber-300 bg-amber-50 p-4 max-w-2xl">
@@ -135,12 +224,97 @@ export const EmailPage: React.FC = () => {
         </div>
       )}
 
+      {tab === 'templates' ? (
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Card padded={false} className="overflow-hidden">
+            <div className="px-5 pt-5">
+              <CardHeader
+                title="თარგები"
+                subtitle={`${templates.length} თარგი`}
+                action={
+                  <button type="button" onClick={() => openTemplate(null)} className={`${secondaryButton} inline-flex items-center gap-1.5 !py-1.5 !px-3`}>
+                    <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+                    დამატება
+                  </button>
+                }
+              />
+            </div>
+
+            <ul className="divide-y divide-stone-100">
+              {templates.map((template) => (
+                <li key={template.key} className="px-5 py-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-semibold text-stone-900">
+                      {template.label}
+                      {template.builtIn && (
+                        <span className="ml-2 text-[10px] font-medium text-stone-500">ჩაშენებული</span>
+                      )}
+                    </p>
+                    <p className="text-[11px] text-stone-600 truncate">{template.subject || '— სათაურის გარეშე —'}</p>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <button type="button" onClick={() => openTemplate(template)} aria-label={`${template.label} — რედაქტირება`} className="p-1.5 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-100 cursor-pointer">
+                      <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+                    </button>
+                    {!template.builtIn && (
+                      <button type="button" onClick={() => setDeleting(template)} aria-label={`${template.label} — წაშლა`} className="p-1.5 rounded-lg text-stone-600 hover:text-rose-700 hover:bg-rose-50 cursor-pointer">
+                        <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                      </button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Card>
+
+          <Card>
+            <CardHeader
+              title={editing ? 'თარგის რედაქტირება' : 'ახალი თარგი'}
+              subtitle={editing?.builtIn ? 'ჩაშენებული თარგის ტექსტი იცვლება, წაშლა — არა.' : undefined}
+            />
+            <div className="space-y-4">
+              <Field id="tpl-label" label="სახელი" required>
+                {() => <input id="tpl-label" value={draft.label} onChange={(e) => setDraft((p) => ({ ...p, label: e.target.value }))} placeholder="მაგ. მადლობა შეკვეთისთვის" className={inputClass} />}
+              </Field>
+
+              <Field id="tpl-subject" label="თემა">
+                {() => <input id="tpl-subject" value={draft.subject} onChange={(e) => setDraft((p) => ({ ...p, subject: e.target.value }))} className={inputClass} />}
+              </Field>
+
+              <Field
+                id="tpl-body"
+                label="ტექსტი"
+                hint="ცვლადები: {{client_name}}, {{order_number}}, {{balance}}, {{total}}, {{guestbook_url}}, {{album_url}}, {{event_title}}, {{courier_info}}"
+              >
+                {(d) => (
+                  <textarea id="tpl-body" rows={10} value={draft.body} onChange={(e) => setDraft((p) => ({ ...p, body: e.target.value }))} aria-describedby={d} className={`${inputClass} font-mono text-[12px]`} />
+                )}
+              </Field>
+
+              <Field id="tpl-emailjs" label="EmailJS template id" hint="ცარიელი დატოვეთ, თუ საერთო თარგს იყენებთ.">
+                {(d) => <input id="tpl-emailjs" value={draft.emailjsTemplateId} onChange={(e) => setDraft((p) => ({ ...p, emailjsTemplateId: e.target.value }))} aria-describedby={d} className={`${inputClass} font-mono`} />}
+              </Field>
+
+              <div className="flex gap-2">
+                {editing && (
+                  <button type="button" onClick={() => openTemplate(null)} className={`${secondaryButton} flex-1`}>
+                    გაუქმება
+                  </button>
+                )}
+                <button type="button" onClick={saveTemplate} disabled={savingTemplate} className={`${primaryButton} flex-1`}>
+                  {savingTemplate ? 'ინახება...' : 'შენახვა'}
+                </button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      ) : (
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="space-y-4">
           <Field id="email-template" label="თარგი">
             {() => (
               <select id="email-template" value={templateKey} onChange={(e) => setTemplateKey(e.target.value)} className={inputClass}>
-                {EMAIL_TEMPLATES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
+                {templates.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
               </select>
             )}
           </Field>
@@ -239,6 +413,16 @@ export const EmailPage: React.FC = () => {
           </div>
         </section>
       </div>
+      )}
+
+      <ConfirmDialog
+        isOpen={deleting !== null}
+        title="თარგის წაშლა"
+        message={`„${deleting?.label}“ წაიშლება. უკვე გაგზავნილ წერილებს ეს არ შეეხება.`}
+        confirmLabel="წაშლა"
+        onConfirm={removeTemplate}
+        onCancel={() => setDeleting(null)}
+      />
     </div>
   );
 };

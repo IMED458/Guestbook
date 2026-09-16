@@ -17,6 +17,8 @@ import { ActivityPage } from './ActivityPage.tsx';
 import { SettingsPage } from './SettingsPage.tsx';
 import { RequestsPage } from './RequestsPage.tsx';
 import { ClientDetailsPage } from './ClientDetailsPage.tsx';
+import { PaymentsPage } from './PaymentsPage.tsx';
+import { GuestbooksPage } from './GuestbooksPage.tsx';
 
 /**
  * Chooses the back-office page for the current hash, after checking that the
@@ -87,6 +89,12 @@ export const AdminRouter: React.FC = () => {
         break;
       case 'admin/albums':
         page = <AlbumsPage />;
+        break;
+      case 'admin/payments':
+        page = <PaymentsPage />;
+        break;
+      case 'admin/guestbooks':
+        page = <GuestbooksPage />;
         break;
       case 'admin/qr':
         page = <QrStudioPage />;
