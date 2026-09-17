@@ -44,7 +44,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({ slug, onBackToHome, onNavi
           className="inline-flex items-center gap-2 text-sm font-medium text-stone-700 hover:text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 rounded-lg px-1 py-1 cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          <span>{lang === 'ka' ? 'დაბრუნება მთავარზე' : 'Back to home'}</span>
+          <span>{lang === 'ka' ? 'უკან დაბრუნება' : 'Back'}</span>
         </button>
 
         <h1 className="mt-6 text-3xl sm:text-4xl font-serif font-bold text-stone-900">

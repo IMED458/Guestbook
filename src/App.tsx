@@ -113,7 +113,7 @@ export default function App() {
       case 'client':
         return <ClientDashboard />;
       case 'guestbook':
-        return <GuestBookPublicView slug={slug} onBackToHome={() => navigate('login')} />;
+        return <GuestBookPublicView slug={slug} />;
       case 'album':
         return <AlbumUploadPage slug={slug} />;
       case 'event':
@@ -124,7 +124,7 @@ export default function App() {
         return (
           <LegalPage
             slug={legalSlug}
-            onBackToHome={() => navigate('login')}
+            onBackToHome={() => window.history.back()}
             onNavigateLegal={(next) => {
               setLegalSlug(next);
               navigate('legal/:slug', { slug: next });

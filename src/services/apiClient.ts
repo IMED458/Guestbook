@@ -18,7 +18,9 @@ export class ApiError extends Error {
     message: string,
     public details?: string[]
   ) {
-    super(message);
+    // The server names the offending fields in `details`. Showing only the
+    // headline left "invalid request" on screen with no way to tell why.
+    super(details?.length ? `${message} — ${details.join('; ')}` : message);
   }
 }
 

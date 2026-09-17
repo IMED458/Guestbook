@@ -34,17 +34,23 @@ const accessSchema = z.object({
   payments: z.boolean(),
 });
 
+/*
+ * The optional fields are `nullish`, not `optional`. A client record stores a
+ * blank field as null rather than dropping it, so null is what the admin page
+ * genuinely sends — rejecting it failed every client who had left the company
+ * or phone field empty.
+ */
 const createUserSchema = z.object({
   username: z.string().transform((v) => v.trim().toLowerCase().replace(/\s+/g, '')),
   password: z.string().min(6).max(128),
   firstName: z.string().min(1).max(80),
-  lastName: z.string().max(80).default(''),
-  companyName: z.string().max(160).optional(),
-  contactEmail: z.string().email().max(200).optional().or(z.literal('')),
-  phone: z.string().max(40).optional(),
+  lastName: z.string().max(80).nullish().transform((v) => v || ''),
+  companyName: z.string().max(160).nullish(),
+  contactEmail: z.string().email().max(200).nullish().or(z.literal('')),
+  phone: z.string().max(40).nullish(),
   role: z.enum(['SUPER_ADMIN', 'STAFF', 'CLIENT']),
   permissions: z.array(z.string()).max(64).default([]),
-  clientId: z.string().max(128).optional(),
+  clientId: z.string().max(128).nullish(),
   access: accessSchema.default({ guestbook: false, album: false, orders: false, payments: false }),
   mustChangePassword: z.boolean().default(true),
 });
@@ -143,7 +149,7 @@ userRoutes.post('/', async (c) => {
   }, false);
 
   await writeDocument(c.env, `usernames/${input.username}`, { uid: created.localId, createdAt: now }, false);
-  await applyClaims(c.env, created.localId, input.role, input.clientId, input.permissions);
+  await applyClaims(c.env, created.localId, input.role, input.clientId || undefined, input.permissions);
 
   await writeDocument(c.env, `activityLogs/${crypto.randomUUID().replace(/-/g, '').slice(0, 20)}`, {
     actorUserId: actor.uid,

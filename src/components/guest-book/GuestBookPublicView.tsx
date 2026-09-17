@@ -6,7 +6,6 @@ import {
   Lock,
   MessageSquare,
   Sparkles,
-  ArrowLeft,
   Loader2,
   Shield,
   Clock,
@@ -24,7 +23,6 @@ import { useI18n, LanguageSwitcher } from '../../lib/i18n.tsx';
 
 interface GuestBookPublicViewProps {
   slug: string;
-  onBackToHome: () => void;
   onOpenDashboard?: () => void;
 }
 
@@ -32,7 +30,6 @@ const EMOJIS = ['❤️', '🥰', '😂', '👏', '🎉'];
 
 export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
   slug,
-  onBackToHome,
   onOpenDashboard
 }) => {
   const { t, lang, formatEventDate, translateRelationship, translateEventType } = useI18n();
@@ -145,13 +142,7 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
           <h2 className="text-xl font-serif font-bold text-stone-900 mb-2">
             {lang === 'ka' ? 'სტუმრების წიგნი ვერ მოიძებნა' : 'Guest Book Not Found'}
           </h2>
-          <p className="text-sm text-stone-600 mb-6">{error}</p>
-          <button
-            onClick={onBackToHome}
-            className="px-5 py-2.5 bg-stone-900 text-white rounded-xl text-sm font-semibold hover:bg-stone-800 transition-colors cursor-pointer"
-          >
-            {t('common', 'back')}
-          </button>
+          <p className="text-sm text-stone-600">{error}</p>
         </div>
       </div>
     );
@@ -199,13 +190,7 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
             </button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-stone-800 flex items-center justify-between">
-            <button
-              onClick={onBackToHome}
-              className="text-xs text-stone-500 hover:text-stone-300 transition-colors cursor-pointer"
-            >
-              ← {t('common', 'back')}
-            </button>
+          <div className="mt-6 pt-6 border-t border-stone-800 flex items-center justify-center">
             <LanguageSwitcher />
           </div>
         </div>
@@ -269,17 +254,7 @@ export const GuestBookPublicView: React.FC<GuestBookPublicViewProps> = ({
           backgroundColor: isDark ? 'rgba(10, 10, 12, 0.75)' : 'rgba(255, 255, 255, 0.75)'
         }}
       >
-        <button
-          onClick={onBackToHome}
-          className={`shrink-0 flex items-center gap-1.5 text-xs font-semibold px-2.5 sm:px-3 py-2 rounded-lg transition-colors cursor-pointer ${
-            isDark ? 'text-stone-300 hover:text-white hover:bg-white/10' : 'text-stone-700 hover:text-stone-900 hover:bg-stone-100'
-          }`}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span className="hidden sm:inline">{t('common', 'back')}</span>
-        </button>
-
-        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 ml-auto">
           <LanguageSwitcher />
 
           {isOwner && onOpenDashboard && (
