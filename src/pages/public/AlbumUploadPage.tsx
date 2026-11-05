@@ -21,6 +21,25 @@ interface QueueItem {
 const CONCURRENCY = 3;
 
 /**
+ * Copy the picked files into plain queue items straight away.
+ *
+ * A FileList is a live view of the input element, and the change handler
+ * clears that input as soon as it has handed the list over. Reading the list
+ * inside a setState updater therefore came too late: React runs the updater
+ * after the handler has finished, by which point the list was empty and every
+ * chosen photo was dropped without a word.
+ */
+export function toQueueItems(files: FileList | File[] | null | undefined): QueueItem[] {
+  if (!files?.length) return [];
+  return Array.from(files).map((file) => ({
+    id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2, 7)}`,
+    file,
+    phase: 'queued' as UploadPhase,
+    progress: 0,
+  }));
+}
+
+/**
  * What a guest sees after scanning the album QR. No account, no app, no
  * instructions beyond one button — they are standing at a wedding holding a
  * phone, and every extra step loses photographs.
@@ -40,16 +59,9 @@ export const AlbumUploadPage: React.FC<{ slug: string }> = ({ slug }) => {
   }, [slug]);
 
   const addFiles = (files: FileList | null) => {
-    if (!files?.length) return;
-    setQueue((prev) => [
-      ...prev,
-      ...Array.from(files).map((file) => ({
-        id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2, 7)}`,
-        file,
-        phase: 'queued' as UploadPhase,
-        progress: 0,
-      })),
-    ]);
+    const picked = toQueueItems(files);
+    if (!picked.length) return;
+    setQueue((prev) => [...prev, ...picked]);
   };
 
   const patch = useCallback((id: string, changes: Partial<QueueItem>) => {
